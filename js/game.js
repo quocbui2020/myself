@@ -3,303 +3,525 @@ class Game {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
-        this.width = canvas.width;
-        this.height = canvas.height;
+        this.width = 0;
+        this.height = 0;
+        this.worldWidth = 0;
+        this.worldHeight = 0;
+        this.cameraX = 0;
+        this.cameraY = 0;
 
-        // Game states
         this.currentFloor = 1;
-        this.totalFloors = 10;
-        this.enemiesPerFloor = (floor) => 1 + floor; // 2 on floor 1, 3 on floor 2, etc.
         this.currentEnemies = [];
-        this.caughtEnemies = 0;
-        this.gameOver = false;
-        this.gameWon = false;
-        this.floorClearedTime = 0;
+        this.defeatedThisFloor = 0;
+        this.totalDefeated = 0;
+        this.floorTransitionTicks = 0;
 
-        // Initialize player
-        this.player = new Player(this.width / 2, this.height / 2);
+        this.mouseX = 0;
+        this.mouseY = 0;
+        this.projectiles = [];
+        this.cracks = [];
+        this.torePapers = [];
 
-        // Initialize particle system
+        this.lastHammerTime = 0;
+        this.hammerCooldownMs = 220;
+        this.hammerRange = 90;
+        this.hammerDamage = 1;
+        this.stunMs = 2200;
+        this.resumeHealth = 100;
+        this.resumeRect = { x: 0, y: 0, width: 0, height: 0 };
+
+        this.deskImage = new Image();
+        this.deskImageLoaded = false;
+        this.deskImage.onload = () => {
+            this.deskImageLoaded = true;
+        };
+        this.deskImage.src = 'images/desk-texture.svg';
+
         this.particles = new ParticleSystem();
 
-        // Information points (scattered around the map)
-        this.infoPoints = this.generateInfoPoints();
+        this.resizeCanvas();
+        this.player = new Player(this.worldWidth * 0.5, this.worldHeight * 0.5);
+        this.player.setTarget(this.worldWidth * 0.5, this.worldHeight * 0.5);
+        this.updateCamera();
 
-        // Selected info point
-        this.selectedInfo = null;
-
-        // Initialize enemies
-        this.initializeFloor();
-
-        // Canvas click handler for info points
-        this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
-
-        // Start game loop
+        this.spawnFloorEnemies();
+        this.bindEvents();
+        this.updateHud();
         this.gameLoop();
     }
 
-    generateInfoPoints() {
-        const points = [];
-        const infoData = [
-            { name: "Knight's Tale", info: "A skilled warrior training to become a legendary dragon slayer." },
-            { name: "Ancient Dragon", info: "Legends speak of an ancient dragon guarding the knowledge realm." },
-            { name: "Sacred Sword", info: "A legendary sword forged with ancient magic, waiting to be discovered." },
-            { name: "Mystical Library", info: "Contains scrolls of programming wisdom and code enchantments." },
-            { name: "Forest of Algorithms", info: "A place where optimization and logic dance together." },
-            { name: "Tower of Knowledge", info: "Reaching the top grants understanding of all digital realms." },
-            { name: "Code Crystals", info: "Rare gems that power the magic of computation." },
-            { name: "Developer's Tavern", info: "Where programmers share tales of bugs and victories." },
-            { name: "JavaScript Spell", info: "A powerful incantation that brings interactivity to the web." },
-            { name: "Canvas Enchantment", info: "Magic that allows drawing and animation in the digital realm." }
-        ];
+    bindEvents() {
+        window.addEventListener('resize', () => this.resizeCanvas());
 
-        for (let i = 0; i < 5; i++) {
-            const data = infoData[i];
-            points.push({
-                x: Math.random() * (this.width - 80) + 40,
-                y: Math.random() * (this.height - 80) + 40,
-                radius: 15,
-                ...data
-            });
-        }
-        return points;
+        this.canvas.addEventListener('mousemove', (event) => {
+            const pos = this.getMousePosition(event);
+            this.mouseX = pos.x;
+            this.mouseY = pos.y;
+            const worldPos = this.screenToWorld(pos.x, pos.y);
+            this.player.setTarget(worldPos.x, worldPos.y);
+            this.updateAimRing();
+        });
+
+        this.canvas.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            this.shootGun(event);
+        });
+
+        this.canvas.addEventListener('mousedown', (event) => {
+            if (event.button === 0) {
+                this.swingHammer(event);
+            }
+        });
     }
 
-    initializeFloor() {
+    getMousePosition(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+        };
+    }
+
+    updateAimRing() {
+        const ring = document.getElementById('aimRing');
+        ring.style.left = `${this.mouseX}px`;
+        ring.style.top = `${this.mouseY}px`;
+    }
+
+    resizeCanvas() {
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+
+        // Keep map larger than one viewport, but not excessively large.
+        this.worldWidth = Math.max(this.width * 1.1, this.width + 200);
+        this.worldHeight = Math.max(this.height * 1.1, this.height + 150);
+        this.updateResumeRect();
+
+        if (this.player) {
+            this.player.x = Math.min(this.player.x, this.worldWidth - this.player.width);
+            this.player.y = Math.min(this.player.y, this.worldHeight - this.player.height);
+            this.player.x = Math.max(0, this.player.x);
+            this.player.y = Math.max(0, this.player.y);
+        }
+
+        for (const enemy of this.currentEnemies) {
+            enemy.x = Math.min(enemy.x, this.worldWidth - enemy.width);
+            enemy.y = Math.min(enemy.y, this.worldHeight - enemy.height);
+            enemy.x = Math.max(0, enemy.x);
+            enemy.y = Math.max(0, enemy.y);
+        }
+
+        this.updateCamera();
+    }
+
+    screenToWorld(screenX, screenY) {
+        return {
+            x: screenX + this.cameraX,
+            y: screenY + this.cameraY
+        };
+    }
+
+    updateCamera() {
+        if (!this.player) {
+            this.cameraX = 0;
+            this.cameraY = 0;
+            return;
+        }
+
+        const center = this.player.getCenter();
+        this.cameraX = center.x - this.width / 2;
+        this.cameraY = center.y - this.height / 2;
+
+        this.cameraX = Math.max(0, Math.min(this.cameraX, this.worldWidth - this.width));
+        this.cameraY = Math.max(0, Math.min(this.cameraY, this.worldHeight - this.height));
+    }
+
+    updateResumeRect() {
+        const pageW = Math.min(1200, this.worldWidth * 0.62);
+        const pageH = Math.min(780, this.worldHeight * 0.62);
+        const x = (this.worldWidth - pageW) / 2;
+        const y = (this.worldHeight - pageH) / 2;
+        this.resumeRect = { x, y, width: pageW, height: pageH };
+    }
+
+    getEnemyCountForFloor(floor) {
+        if (floor === 1) return 2;
+        if (floor === 2) return 4;
+        if (floor === 3) return 6;
+        return Math.min(20, floor + 3);
+    }
+
+    getUpgradeTier(floor) {
+        return Math.floor((floor - 1) / 10);
+    }
+
+    spawnFloorEnemies() {
         this.currentEnemies = [];
-        this.caughtEnemies = 0;
+        this.defeatedThisFloor = 0;
+        // NOTE: resumeHealth does NOT reset on floor transition - only on game restart
 
-        const enemyCount = this.enemiesPerFloor(this.currentFloor);
-        
-        for (let i = 0; i < enemyCount; i++) {
-            let x, y;
-            let validPosition = false;
+        const count = this.getEnemyCountForFloor(this.currentFloor);
+        const tier = this.getUpgradeTier(this.currentFloor);
+        const bossIndex = this.currentFloor % 10 === 0 ? count - 1 : -1;
 
-            // Generate random position away from player
-            while (!validPosition) {
-                x = Math.random() * (this.width - 50);
-                y = Math.random() * (this.height - 50);
-                const dx = x - this.player.x;
-                const dy = y - this.player.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > 150) {
-                    validPosition = true;
+        for (let i = 0; i < count; i++) {
+            const isBoss = i === bossIndex;
+            let x = 0;
+            let y = 0;
+            let attempts = 0;
+            do {
+                x = Math.random() * (this.worldWidth - 120) + 60;
+                y = Math.random() * (this.worldHeight - 120) + 60;
+                attempts++;
+            } while (this.distance(x, y, this.player.x, this.player.y) < 180 && attempts < 25);
+
+            this.currentEnemies.push(new Enemy(x, y, { isBoss, upgradeTier: tier }));
+        }
+    }
+
+    shootGun(event) {
+        const pos = this.getMousePosition(event);
+        this.mouseX = pos.x;
+        this.mouseY = pos.y;
+        const worldPos = this.screenToWorld(pos.x, pos.y);
+        this.player.setTarget(worldPos.x, worldPos.y);
+        this.player.triggerGun();
+
+        const center = this.player.getCenter();
+        const dx = worldPos.x - center.x;
+        const dy = worldPos.y - center.y;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const speed = 11;
+
+        this.projectiles.push({
+            x: center.x + (dx / len) * 24,
+            y: center.y + (dy / len) * 24,
+            vx: (dx / len) * speed,
+            vy: (dy / len) * speed,
+            life: 60,
+            radius: 5
+        });
+
+        this.particles.createExplosion(center.x, center.y, 8, '#ffdca8');
+    }
+
+    swingHammer(event) {
+        const now = performance.now();
+        if (now - this.lastHammerTime < this.hammerCooldownMs) return;
+        this.lastHammerTime = now;
+
+        const pos = this.getMousePosition(event);
+        this.mouseX = pos.x;
+        this.mouseY = pos.y;
+        const worldPos = this.screenToWorld(pos.x, pos.y);
+        this.player.setTarget(worldPos.x, worldPos.y);
+        this.player.triggerHammer();
+
+        const center = this.player.getCenter();
+        const dirX = worldPos.x - center.x;
+        const dirY = worldPos.y - center.y;
+        const dirLen = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
+        const impactX = center.x + (dirX / dirLen) * 60;
+        const impactY = center.y + (dirY / dirLen) * 60;
+
+        this.addCrack(impactX, impactY);
+        this.particles.createExplosion(impactX, impactY, 12, '#dbeafe');
+
+        for (let i = this.currentEnemies.length - 1; i >= 0; i--) {
+            const enemy = this.currentEnemies[i];
+            const e = enemy.getCenter();
+            const d = this.distance(impactX, impactY, e.x, e.y);
+            if (d <= this.hammerRange) {
+                const dead = enemy.applyDamage(this.hammerDamage);
+                this.particles.createDamage(e.x, e.y);
+                if (dead) {
+                    this.currentEnemies.splice(i, 1);
+                    this.defeatedThisFloor++;
+                    this.totalDefeated++;
+                    this.particles.createCatch(e.x, e.y);
+                }
+            }
+        }
+    }
+
+    addCrack(x, y) {
+        const branches = [];
+        const branchCount = 8 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < branchCount; i++) {
+            const angle = (Math.PI * 2 * i) / branchCount + (Math.random() - 0.5) * 0.45;
+            const length = 40 + Math.random() * 70;
+            const segments = 5 + Math.floor(Math.random() * 3);
+            const points = [{ x, y }];
+            for (let s = 1; s <= segments; s++) {
+                const t = s / segments;
+                const jitter = (Math.random() - 0.5) * 10;
+                points.push({
+                    x: x + Math.cos(angle) * length * t + Math.cos(angle + Math.PI / 2) * jitter,
+                    y: y + Math.sin(angle) * length * t + Math.sin(angle + Math.PI / 2) * jitter
+                });
+            }
+            branches.push(points);
+        }
+
+        this.cracks.push({ branches, life: 900 });
+        if (this.cracks.length > 180) {
+            this.cracks.shift();
+        }
+    }
+
+    addTornPaper(x, y) {
+        const size = 8 + Math.random() * 16;
+        const rotation = Math.random() * Math.PI * 2;
+        const decay = 300 + Math.random() * 200;
+        this.torePapers.push({
+            x,
+            y,
+            size,
+            rotation,
+            life: decay,
+            maxLife: decay,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: -0.5 - Math.random() * 1.2
+        });
+    }
+
+    updateProjectiles(now) {
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const bullet = this.projectiles[i];
+            bullet.x += bullet.vx;
+            bullet.y += bullet.vy;
+            bullet.life -= 1;
+
+            let hitEnemy = false;
+            for (const enemy of this.currentEnemies) {
+                const e = enemy.getCenter();
+                if (this.distance(bullet.x, bullet.y, e.x, e.y) < enemy.width * 0.5 + bullet.radius) {
+                    enemy.stun(this.stunMs, now);
+                    this.particles.createExplosion(e.x, e.y, 8, '#93c5fd');
+                    hitEnemy = true;
+                    break;
                 }
             }
 
-            // Boss on floor 10
-            const isBoss = this.currentFloor === this.totalFloors;
-            this.currentEnemies.push(new Enemy(x, y, isBoss));
-        }
-    }
-
-    handleCanvasClick(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // Check if clicked on info point
-        for (let point of this.infoPoints) {
-            const dx = point.x - x;
-            const dy = point.y - y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < point.radius + 5) {
-                this.selectedInfo = point;
-                this.updateInfoDisplay();
-                return;
+            const out = bullet.x < 0 || bullet.x > this.worldWidth || bullet.y < 0 || bullet.y > this.worldHeight;
+            if (hitEnemy || out || bullet.life <= 0) {
+                this.projectiles.splice(i, 1);
             }
-        }
-
-        // Clicking elsewhere clears selection
-        this.selectedInfo = null;
-        this.updateInfoDisplay();
-    }
-
-    updateInfoDisplay() {
-        const infoDisplay = document.getElementById('infoDisplay');
-        if (this.selectedInfo) {
-            infoDisplay.innerHTML = `
-                <div class="info-panel">
-                    <div class="info-title">ℹ️ ${this.selectedInfo.name}</div>
-                    <p>${this.selectedInfo.info}</p>
-                </div>
-            `;
-        } else {
-            infoDisplay.innerHTML = '';
         }
     }
 
     update() {
-        if (this.gameOver || this.gameWon) return;
+        const now = performance.now();
 
-        // Update player
-        this.player.update(this.width, this.height);
+        this.player.update(this.worldWidth, this.worldHeight);
+        this.updateProjectiles(now);
 
-        // Update enemies
-        for (let enemy of this.currentEnemies) {
-            enemy.update(this.player, this.width, this.height, this.currentEnemies);
-        }
-
-        // Check collisions with player
-        for (let i = 0; i < this.currentEnemies.length; i++) {
-            const enemy = this.currentEnemies[i];
-            if (this.player.checkCollisionWithPoint(
-                enemy.x + enemy.width / 2,
-                enemy.y + enemy.height / 2,
-                Math.max(enemy.width, enemy.height) / 2
-            )) {
-                // Enemy caught!
-                this.particles.createCatch(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
-                this.currentEnemies.splice(i, 1);
-                this.caughtEnemies++;
-                i--;
-            }
-        }
-
-        // Update particles
-        this.particles.update();
-
-        // Check if floor is cleared
-        if (this.currentEnemies.length === 0 && this.caughtEnemies > 0) {
-            if (this.currentFloor === this.totalFloors) {
-                this.gameWon = true;
-            } else {
-                this.floorClearedTime++;
-                if (this.floorClearedTime > 120) {
-                    this.nextFloor();
+        let dpsFromEnemies = 0;
+        for (const enemy of this.currentEnemies) {
+            enemy.update(now, this.player, this.worldWidth, this.worldHeight, this.currentEnemies, this.resumeRect);
+            if (enemy.eatingResume) {
+                dpsFromEnemies += enemy.eatDps;
+                const center = enemy.getCenter();
+                if (Math.random() < 0.08) {
+                    this.addTornPaper(center.x + (Math.random() - 0.5) * 25, center.y + (Math.random() - 0.5) * 25);
                 }
             }
         }
 
-        // Update UI
-        this.updateUI();
-    }
-
-    nextFloor() {
-        this.currentFloor++;
-        this.initializeFloor();
-        this.floorClearedTime = 0;
-        this.particles.clear();
-    }
-
-    updateUI() {
-        document.getElementById('floorLevel').textContent = this.currentFloor;
-        document.getElementById('caughtCount').textContent = `${this.caughtEnemies} / ${this.enemiesPerFloor(this.currentFloor)}`;
-
-        // Progress bar
-        const progress = (this.caughtEnemies / this.enemiesPerFloor(this.currentFloor)) * 100;
-        document.getElementById('progressBar').style.width = progress + '%';
-
-        // Monster indicators
-        const indicatorsDiv = document.getElementById('monsterIndicators');
-        indicatorsDiv.innerHTML = '';
-        const totalMonsters = this.enemiesPerFloor(this.currentFloor);
-        for (let i = 0; i < totalMonsters; i++) {
-            const indicator = document.createElement('div');
-            indicator.className = 'monster-indicator' + (i < this.caughtEnemies ? ' caught' : '');
-            indicator.textContent = i < this.caughtEnemies ? '✓' : '🐉';
-            indicatorsDiv.appendChild(indicator);
+        if (dpsFromEnemies > 0) {
+            this.resumeHealth = Math.max(0, this.resumeHealth - dpsFromEnemies / 60);
         }
 
-        // Floor clear message
-        const infoDisplay = document.getElementById('infoDisplay');
-        if (this.currentEnemies.length === 0 && this.caughtEnemies > 0) {
-            if (this.gameWon) {
-                infoDisplay.innerHTML = `
-                    <div class="floor-clear" style="background: linear-gradient(135deg, #FFD700, #FFA500);">
-                        🏆 GAME WON! 🏆<br>
-                        <small>You defeated all dragons!</small>
-                    </div>
-                `;
-            } else {
-                infoDisplay.innerHTML = `
-                    <div class="floor-clear">
-                        ✅ Floor Cleared!<br>
-                        <small>Next floor incoming...</small>
-                    </div>
-                `;
+        this.particles.update();
+        for (const crack of this.cracks) {
+            crack.life -= 1;
+        }
+        this.cracks = this.cracks.filter((c) => c.life > 0);
+
+        if (this.currentEnemies.length === 0) {
+            this.floorTransitionTicks++;
+            if (this.floorTransitionTicks > 75) {
+                this.currentFloor++;
+                this.floorTransitionTicks = 0;
+                this.spawnFloorEnemies();
             }
-        } else if (!this.selectedInfo && !this.gameWon && this.currentEnemies.length > 0) {
-            infoDisplay.innerHTML = `
-                <div class="info-panel">
-                    <div class="info-title">📋 Status</div>
-                    <p>Catch all dragons to progress!<br>Click info points to learn more.</p>
-                </div>
-            `;
+        } else {
+            this.floorTransitionTicks = 0;
+        }
+
+        this.updateCamera();
+        this.updateHud();
+    }
+
+    updateHud() {
+        const total = this.getEnemyCountForFloor(this.currentFloor);
+        document.getElementById('floorLevel').textContent = String(this.currentFloor);
+        document.getElementById('caughtCount').textContent = `${this.defeatedThisFloor} / ${total}`;
+        document.getElementById('progressBar').style.width = `${(this.defeatedThisFloor / total) * 100}%`;
+
+        const hpPct = Math.round(this.resumeHealth);
+        document.getElementById('resumeHpText').textContent = `${hpPct}%`;
+        document.getElementById('resumeHpBar').style.width = `${Math.max(0, this.resumeHealth)}%`;
+
+        let status = 'Protect your resume. Dragons try to eat it when you are far.';
+        if (this.currentEnemies.length === 0) {
+            status = `Floor cleared. Entering floor ${this.currentFloor + 1}...`;
+        } else if (this.resumeHealth <= 20) {
+            status = 'Critical! Resume is heavily damaged. Stun and hammer dragons away now.';
+        } else if (this.currentFloor >= 11) {
+            status = `Monster upgrade active (Tier ${this.getUpgradeTier(this.currentFloor)}). Keep protecting the resume.`;
+        }
+        document.getElementById('statusText').textContent = status;
+    }
+
+    drawResumeTerrain() {
+        const x = this.resumeRect.x;
+        const y = this.resumeRect.y;
+        const pageW = this.resumeRect.width;
+        const pageH = this.resumeRect.height;
+
+        if (this.deskImageLoaded) {
+            const pattern = this.ctx.createPattern(this.deskImage, 'repeat');
+            this.ctx.fillStyle = pattern;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+        } else {
+            this.ctx.fillStyle = '#6e4a28';
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+        }
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+        this.ctx.fillRect(x + 14, y + 20, pageW, pageH);
+
+        this.ctx.fillStyle = '#f2e7cf';
+        this.ctx.fillRect(x, y, pageW, pageH);
+
+        this.ctx.strokeStyle = '#d0bea0';
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeRect(x, y, pageW, pageH);
+
+        this.ctx.fillStyle = '#594a32';
+        this.ctx.font = 'bold 34px Georgia';
+        this.ctx.fillText('PROTECT MY RESUME', x + 26, y + 52);
+
+        this.ctx.font = 'bold 18px Georgia';
+        this.ctx.fillText('Summary', x + 26, y + 92);
+        this.ctx.fillText('Skills', x + 26, y + 220);
+        this.ctx.fillText('Experience', x + 26, y + 370);
+
+        this.ctx.font = '15px Georgia';
+        this.ctx.fillStyle = '#6f5e44';
+        const lines = [
+            'Software developer focused on web, game logic, and cyber security learning.',
+            'Built interactive frontend projects with JavaScript and Canvas.',
+            'Strong in object-oriented thinking, debugging, and iterative problem solving.',
+            'Technologies: JavaScript, Python, Java, C++, SQL, HTML, CSS, Git.',
+            'Strengths: Algorithmic thinking, user-centric design, rapid prototyping.'
+        ];
+        for (let i = 0; i < lines.length; i++) {
+            this.ctx.fillText(lines[i], x + 26, y + 120 + i * 26);
+        }
+
+        this.ctx.strokeStyle = 'rgba(99, 80, 49, 0.22)';
+        this.ctx.lineWidth = 1;
+        for (let r = 0; r < 17; r++) {
+            const ry = y + 262 + r * 20;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + 24, ry);
+            this.ctx.lineTo(x + pageW - 24, ry);
+            this.ctx.stroke();
+        }
+
+        const healthGlow = Math.max(0, 1 - this.resumeHealth / 100);
+        if (healthGlow > 0.05) {
+            this.ctx.strokeStyle = `rgba(230, 75, 60, ${0.2 + healthGlow * 0.45})`;
+            this.ctx.lineWidth = 10;
+            this.ctx.strokeRect(x - 2, y - 2, pageW + 4, pageH + 4);
+        }
+    }
+
+    drawCracks() {
+        this.ctx.save();
+        for (const crack of this.cracks) {
+            const alpha = Math.min(0.85, crack.life / 900);
+            this.ctx.strokeStyle = `rgba(210, 228, 255, ${alpha})`;
+            this.ctx.lineWidth = 1.6;
+            for (const branch of crack.branches) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(branch[0].x, branch[0].y);
+                for (let i = 1; i < branch.length; i++) {
+                    this.ctx.lineTo(branch[i].x, branch[i].y);
+                }
+                this.ctx.stroke();
+            }
+        }
+        this.ctx.restore();
+    }
+
+    drawTornPapers() {
+        for (const paper of this.torePapers) {
+            const alpha = paper.life / paper.maxLife;
+            this.ctx.save();
+            this.ctx.globalAlpha = alpha * 0.8;
+            this.ctx.translate(paper.x, paper.y);
+            this.ctx.rotate(paper.rotation);
+            this.ctx.fillStyle = '#f5e8d4';
+            this.ctx.fillRect(-paper.size / 2, -paper.size / 2, paper.size, paper.size);
+            this.ctx.strokeStyle = '#d4c5a8';
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeRect(-paper.size / 2, -paper.size / 2, paper.size, paper.size);
+            this.ctx.restore();
+        }
+    }
+
+    drawProjectiles() {
+        for (const bullet of this.projectiles) {
+            this.ctx.fillStyle = '#bfe3ff';
+            this.ctx.beginPath();
+            this.ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            this.ctx.strokeStyle = 'rgba(179, 229, 252, 0.5)';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(bullet.x, bullet.y);
+            this.ctx.lineTo(bullet.x - bullet.vx * 1.2, bullet.y - bullet.vy * 1.2);
+            this.ctx.stroke();
         }
     }
 
     draw() {
-        // Clear canvas
-        this.ctx.fillStyle = 'rgba(135, 206, 235, 0.3)';
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.ctx.clearRect(0, 0, this.width, this.height);
 
-        // Draw grid background
-        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
-        this.ctx.lineWidth = 1;
-        for (let i = 0; i < this.width; i += 40) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(i, 0);
-            this.ctx.lineTo(i, this.height);
-            this.ctx.stroke();
-        }
-        for (let i = 0; i < this.height; i += 40) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, i);
-            this.ctx.lineTo(this.width, i);
-            this.ctx.stroke();
+        this.ctx.save();
+        this.ctx.translate(-this.cameraX, -this.cameraY);
+
+        this.drawResumeTerrain();
+
+        for (const enemy of this.currentEnemies) {
+            enemy.draw(this.ctx, performance.now());
         }
 
-        // Draw info points
-        for (let point of this.infoPoints) {
-            const isSelected = this.selectedInfo === point;
-            this.ctx.fillStyle = isSelected ? '#FFD700' : '#64C8FF';
-            this.ctx.beginPath();
-            this.ctx.arc(point.x, point.y, point.radius, 0, Math.PI * 2);
-            this.ctx.fill();
+        this.drawProjectiles();
+        this.player.draw(this.ctx);
+        this.particles.draw(this.ctx);
+        this.drawCracks();
+        this.drawTornPapers();
 
-            // Glow effect
-            this.ctx.strokeStyle = isSelected ? 'rgba(255, 215, 0, 0.5)' : 'rgba(100, 200, 255, 0.3)';
-            this.ctx.lineWidth = 3;
-            this.ctx.beginPath();
-            this.ctx.arc(point.x, point.y, point.radius + 5, 0, Math.PI * 2);
-            this.ctx.stroke();
-
-            // Draw info icon
-            this.ctx.fillStyle = '#000';
-            this.ctx.font = 'bold 16px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText('ℹ️', point.x, point.y);
-        }
-
-        // Draw enemies
-        for (let enemy of this.currentEnemies) {
-            enemy.draw(this.ctx);
-
-            // Draw distance indicator when fleeing
-            if (enemy.fleeing) {
-                this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
-                this.ctx.lineWidth = 1;
-                this.ctx.beginPath();
-                this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.panicDistance, 0, Math.PI * 2);
-                this.ctx.stroke();
+        // Update torn papers
+        for (let i = this.torePapers.length - 1; i >= 0; i--) {
+            const paper = this.torePapers[i];
+            paper.x += paper.vx;
+            paper.y += paper.vy;
+            paper.vy += 0.04;
+            paper.life -= 1;
+            if (paper.life <= 0) {
+                this.torePapers.splice(i, 1);
             }
         }
 
-        // Draw player
-        this.player.draw(this.ctx);
-
-        // Draw particles
-        this.particles.draw(this.ctx);
-
-        // Draw floor number
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        this.ctx.fillRect(10, 10, 150, 40);
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 20px Arial';
-        this.ctx.textAlign = 'left';
-        this.ctx.fillText(`Floor: ${this.currentFloor}/10`, 20, 35);
+        this.ctx.restore();
     }
 
     gameLoop = () => {
@@ -307,10 +529,31 @@ class Game {
         this.draw();
         requestAnimationFrame(this.gameLoop);
     }
+
+    resetGame() {
+        this.resumeHealth = 100;
+        this.currentFloor = 1;
+        this.defeatedThisFloor = 0;
+        this.totalDefeated = 0;
+        this.cracks = [];
+        this.torePapers = [];
+        this.projectiles = [];
+        this.player.x = this.worldWidth * 0.5;
+        this.player.y = this.worldHeight * 0.5;
+        this.spawnFloorEnemies();
+    }
+
+    distance(x1, y1, x2, y2) {
+        const dx = x1 - x2;
+        const dy = y1 - y2;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
 }
 
-// Initialize game when page loads
 window.addEventListener('load', () => {
     const canvas = document.getElementById('gameCanvas');
-    new Game(canvas);
+    const game = new Game(canvas);
+    document.getElementById('restartBtn').addEventListener('click', () => {
+        game.resetGame();
+    });
 });

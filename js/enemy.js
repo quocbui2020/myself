@@ -1,246 +1,186 @@
-// Enemy class - Dragons that run away from player
+// Enemy class - Dragons that flee, can be stunned, and require hammer hits.
 class Enemy {
-    constructor(x, y, isBoss = false) {
+    constructor(x, y, options = {}) {
         this.x = x;
         this.y = y;
-        this.width = isBoss ? 50 : 35;
-        this.height = isBoss ? 50 : 35;
+        this.isBoss = Boolean(options.isBoss);
+        this.upgradeTier = options.upgradeTier || 0;
+
+        this.width = this.isBoss ? 74 : 50;
+        this.height = this.isBoss ? 74 : 50;
+
+        this.baseSpeed = (this.isBoss ? 2.1 : 2.7) + this.upgradeTier * 0.2;
+        this.speed = this.baseSpeed;
         this.vx = 0;
         this.vy = 0;
-        this.speed = isBoss ? 2 : 3;
-        this.isBoss = isBoss;
-        this.angle = Math.random() * Math.PI * 2;
-        this.panicDistance = isBoss ? 250 : 200;
+
+        this.panicDistance = (this.isBoss ? 280 : 220) + this.upgradeTier * 10;
         this.fleeing = false;
-        this.fleeDirection = 0;
-        this.stuckCounter = 0;
-        this.lastX = x;
-        this.lastY = y;
+        this.stunnedUntil = 0;
+        this.wanderAngle = Math.random() * Math.PI * 2;
+
+        this.maxHp = (this.isBoss ? 10 : 3) + this.upgradeTier;
+        this.hp = this.maxHp;
+        this.eatingResume = false;
+        this.eatDps = (this.isBoss ? 6 : 2.2) + this.upgradeTier * 0.8;
     }
 
-    update(player, mapWidth, mapHeight, enemies) {
-        // Calculate distance to player
-        const dx = player.x + player.width / 2 - (this.x + this.width / 2);
-        const dy = player.y + player.height / 2 - (this.y + this.height / 2);
-        const distance = Math.sqrt(dx * dx + dy * dy);
+    getCenter() {
+        return {
+            x: this.x + this.width / 2,
+            y: this.y + this.height / 2
+        };
+    }
 
-        // Flee from player if close enough
-        if (distance < this.panicDistance) {
-            this.fleeing = true;
-            // Run away from player
-            const fleeAngle = Math.atan2(dy, dx);
-            this.fleeDirection = fleeAngle + Math.PI; // Opposite direction
-            this.vx = Math.cos(this.fleeDirection) * this.speed;
-            this.vy = Math.sin(this.fleeDirection) * this.speed;
+    isStunned(now) {
+        return now < this.stunnedUntil;
+    }
+
+    stun(durationMs, now) {
+        this.stunnedUntil = Math.max(this.stunnedUntil, now + durationMs);
+    }
+
+    applyDamage(amount) {
+        this.hp -= amount;
+        return this.hp <= 0;
+    }
+
+    update(now, player, mapWidth, mapHeight, enemies, resumeRect) {
+        this.eatingResume = false;
+
+        if (this.isStunned(now)) {
+            this.vx *= 0.84;
+            this.vy *= 0.84;
         } else {
-            this.fleeing = false;
-            // Wander around randomly when not fleeing
-            if (Math.random() < 0.02) {
-                this.angle = Math.random() * Math.PI * 2;
-                this.vx = Math.cos(this.angle) * (this.speed * 0.5);
-                this.vy = Math.sin(this.angle) * (this.speed * 0.5);
+            const playerCenter = player.getCenter();
+            const myCenter = this.getCenter();
+            const dx = playerCenter.x - myCenter.x;
+            const dy = playerCenter.y - myCenter.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < this.panicDistance) {
+                this.fleeing = true;
+                const fleeAngle = Math.atan2(dy, dx) + Math.PI;
+                this.vx = Math.cos(fleeAngle) * this.speed;
+                this.vy = Math.sin(fleeAngle) * this.speed;
+            } else {
+                this.fleeing = false;
+
+                const targetX = Math.max(resumeRect.x, Math.min(myCenter.x, resumeRect.x + resumeRect.width));
+                const targetY = Math.max(resumeRect.y, Math.min(myCenter.y, resumeRect.y + resumeRect.height));
+                const tx = targetX - myCenter.x;
+                const ty = targetY - myCenter.y;
+                const tDist = Math.sqrt(tx * tx + ty * ty);
+
+                if (tDist < 18) {
+                    this.eatingResume = true;
+                    this.vx *= 0.6;
+                    this.vy *= 0.6;
+                } else {
+                    this.vx = (tx / Math.max(1, tDist)) * this.speed * 0.85;
+                    this.vy = (ty / Math.max(1, tDist)) * this.speed * 0.85;
+                }
             }
         }
-
-        // Check if stuck (not moving due to obstacles/boundaries)
-        if (Math.abs(this.x - this.lastX) < 0.5 && Math.abs(this.y - this.lastY) < 0.5) {
-            this.stuckCounter++;
-            if (this.stuckCounter > 20) {
-                this.angle = Math.random() * Math.PI * 2;
-                this.vx = Math.cos(this.angle) * this.speed;
-                this.vy = Math.sin(this.angle) * this.speed;
-                this.stuckCounter = 0;
-            }
-        } else {
-            this.stuckCounter = 0;
-        }
-
-        // Update position
-        this.lastX = this.x;
-        this.lastY = this.y;
 
         this.x += this.vx;
         this.y += this.vy;
 
-        // Boundary collision with bouncing
         if (this.x <= 0 || this.x + this.width >= mapWidth) {
-            this.vx *= -0.8;
+            this.vx *= -0.9;
             this.x = Math.max(0, Math.min(this.x, mapWidth - this.width));
         }
         if (this.y <= 0 || this.y + this.height >= mapHeight) {
-            this.vy *= -0.8;
+            this.vy *= -0.9;
             this.y = Math.max(0, Math.min(this.y, mapHeight - this.height));
         }
 
-        // Collision with other enemies
-        for (let other of enemies) {
-            if (other !== this) {
-                const ex = other.x + other.width / 2;
-                const ey = other.y + other.height / 2;
-                const mx = this.x + this.width / 2;
-                const my = this.y + this.height / 2;
-                const edx = ex - mx;
-                const edy = ey - my;
-                const edist = Math.sqrt(edx * edx + edy * edy);
-                const minDist = (this.width + other.width) / 2;
-
-                if (edist < minDist) {
-                    // Separate enemies
-                    const angle = Math.atan2(edy, edx);
-                    this.x -= Math.cos(angle) * (minDist - edist) / 2;
-                    this.y -= Math.sin(angle) * (minDist - edist) / 2;
-                }
+        for (const other of enemies) {
+            if (other === this) continue;
+            const a = this.getCenter();
+            const b = other.getCenter();
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = (this.width + other.width) * 0.45;
+            if (dist > 0 && dist < minDist) {
+                const push = (minDist - dist) * 0.25;
+                this.x -= (dx / dist) * push;
+                this.y -= (dy / dist) * push;
             }
         }
     }
 
-    draw(ctx) {
+    draw(ctx, now) {
+        const center = this.getCenter();
+        const stunned = this.isStunned(now);
+
         ctx.save();
-        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        ctx.translate(center.x, center.y);
 
         if (this.isBoss) {
-            // Draw boss dragon
-            // Body
-            ctx.fillStyle = '#FF4500'; // Orange-red
+            ctx.fillStyle = stunned ? '#8da4be' : '#d6461f';
             ctx.beginPath();
-            ctx.ellipse(0, 0, 20, 15, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, 21, 16, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Boss glow effect
-            ctx.strokeStyle = 'rgba(255, 200, 0, 0.5)';
+            ctx.fillStyle = stunned ? '#7f91a5' : '#bf2f0f';
+            ctx.beginPath();
+            ctx.ellipse(18, 0, 14, 10, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#f4d03f';
+            ctx.beginPath();
+            ctx.arc(23, -4, 3, 0, Math.PI * 2);
+            ctx.arc(23, 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = stunned ? 'rgba(165, 195, 224, 0.85)' : 'rgba(255, 183, 77, 0.65)';
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.ellipse(0, 0, 25, 20, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, 28, 22, 0, 0, Math.PI * 2);
             ctx.stroke();
-
-            // Head
-            ctx.fillStyle = '#CC3300';
-            ctx.beginPath();
-            ctx.ellipse(18, 0, 13, 11, 0.3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Eyes (glowing)
-            ctx.fillStyle = '#FFFF00';
-            ctx.beginPath();
-            ctx.arc(24, -4, 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(24, 4, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Teeth
-            ctx.fillStyle = '#fff';
-            for (let i = 0; i < 4; i++) {
-                ctx.fillRect(23 + i * 3, -2, 2, 4);
-            }
-
-            // Wings
-            ctx.fillStyle = 'rgba(139, 0, 0, 0.7)';
-            ctx.beginPath();
-            ctx.moveTo(-5, -10);
-            ctx.lineTo(-20, -20);
-            ctx.lineTo(-15, -5);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(5, -10);
-            ctx.lineTo(20, -20);
-            ctx.lineTo(15, -5);
-            ctx.closePath();
-            ctx.fill();
-
-            // Tail
-            ctx.strokeStyle = '#CC3300';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(-20, 0);
-            ctx.quadraticCurveTo(-30, 5, -35, 0);
-            ctx.stroke();
-
-            // Spikes
-            ctx.strokeStyle = '#FFFF00';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 5; i++) {
-                ctx.beginPath();
-                ctx.moveTo(-5 + i * 4, -15);
-                ctx.lineTo(-5 + i * 4, -22);
-                ctx.stroke();
-            }
         } else {
-            // Draw regular dragon
-            // Body
-            ctx.fillStyle = '#8B008B'; // Dark magenta
+            ctx.fillStyle = stunned ? '#8aa0b6' : '#7b3fc9';
             ctx.beginPath();
-            ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, 17, 12, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Head
-            ctx.fillStyle = '#9932CC'; // Dark orchid
+            ctx.fillStyle = stunned ? '#90a6bc' : '#8f4be0';
             ctx.beginPath();
-            ctx.ellipse(14, 0, 10, 8, 0.3, 0, Math.PI * 2);
+            ctx.ellipse(13, 0, 10, 8, 0.2, 0, Math.PI * 2);
             ctx.fill();
 
-            // Eyes
-            ctx.fillStyle = '#00FF00';
+            ctx.fillStyle = '#93f06b';
             ctx.beginPath();
-            ctx.arc(20, -3, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(20, 3, 2, 0, Math.PI * 2);
+            ctx.arc(18, -3, 2, 0, Math.PI * 2);
+            ctx.arc(18, 3, 2, 0, Math.PI * 2);
             ctx.fill();
 
-            // Nostrils
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(23, -2, 1, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(23, 2, 1, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Wings
-            ctx.fillStyle = 'rgba(153, 50, 204, 0.6)';
-            ctx.beginPath();
-            ctx.moveTo(-3, -8);
-            ctx.lineTo(-15, -15);
-            ctx.lineTo(-10, -3);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(3, -8);
-            ctx.lineTo(15, -15);
-            ctx.lineTo(10, -3);
-            ctx.closePath();
-            ctx.fill();
-
-            // Tail
-            ctx.strokeStyle = '#9932CC';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(-16, 0);
-            ctx.quadraticCurveTo(-24, 4, -28, 0);
-            ctx.stroke();
-
-            // Spikes
-            ctx.strokeStyle = '#9932CC';
-            ctx.lineWidth = 1.5;
-            for (let i = 0; i < 3; i++) {
+            if (stunned) {
+                ctx.strokeStyle = 'rgba(166, 205, 240, 0.85)';
+                ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(-3 + i * 5, -12);
-                ctx.lineTo(-3 + i * 5, -18);
+                ctx.arc(0, 0, 22, 0, Math.PI * 2);
                 ctx.stroke();
             }
         }
 
         ctx.restore();
-    }
 
-    checkCollisionWithPoint(x, y, radius = 15) {
-        const dx = (this.x + this.width / 2) - x;
-        const dy = (this.y + this.height / 2) - y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        return distance < (this.width / 2 + radius);
+        // Health bar
+        const barW = 36;
+        const pct = Math.max(0, this.hp / this.maxHp);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.fillRect(center.x - barW / 2, center.y - this.height / 2 - 12, barW, 5);
+        ctx.fillStyle = pct > 0.35 ? '#67d183' : '#e16565';
+        ctx.fillRect(center.x - barW / 2, center.y - this.height / 2 - 12, barW * pct, 5);
+
+        if (this.eatingResume && !stunned) {
+            ctx.fillStyle = '#ffd166';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('EATING', center.x, center.y - this.height / 2 - 16);
+        }
     }
 }
