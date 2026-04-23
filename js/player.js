@@ -5,7 +5,7 @@ class Player {
         this.y = y;
         this.width = 64;
         this.height = 58;
-        this.speed = 10.0;
+        this.speed = 20.0;
         this.targetX = x;
         this.targetY = y;
         this.angle = 0;
