@@ -1,107 +1,190 @@
-<!--This is the template for HTML5-->
 <!DOCTYPE html>
-<!--Tell the program this is HTML file-->
 <html lang="en" dir="ltr">
-  <!--Everything between these tag are HTML code-->
-  <head>
-    <!--Head of the page: Tell program how the page should be handled-->
+<head>
     <meta charset="utf-8" />
-    <!--Tell website how to render, display, or decode the page-->
-    <!--charset tells the webpage how to encode-->
-    <title>Quoc Ngoc Bui</title>
-    <!--title of the page-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quoc Ngoc Bui - Portfolio</title>
     <link rel="stylesheet" type="text/css" href="./CSS/styles.css" />
     <link rel="icon" href="./images/favicon.ico" />
-    <!--favorite icon-->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <!--Font family links-->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300&family=Montserrat:wght@300&family=Sacramento&display=swap"
-      rel="stylesheet"
-    />
-    <!--End Font family-->
-  </head>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300&family=Montserrat:wght@300&family=Sacramento&display=swap" rel="stylesheet" />
+    <style>
+        .game-showcase {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 60px 20px;
+            text-align: center;
+            margin: 40px 0;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
 
-  <body>
-    <!--Body of the page-->
+        .game-showcase h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-showcase p {
+            color: #f0f0f0;
+            max-width: 600px;
+            margin: 20px auto;
+            font-size: 1.1em;
+        }
+
+        .game-btn {
+            display: inline-block;
+            background: #FFD700;
+            color: #333;
+            padding: 15px 40px;
+            margin: 20px 10px;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 8px;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .game-btn:hover {
+            background: #FFA500;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .feature-title {
+            color: #FFD700;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .feature-desc {
+            font-size: 0.9em;
+            color: #ddd;
+        }
+    </style>
+</head>
+
+<body>
     <div class="top-container">
-      <img class="top-cloud" src="./images/cloud.png" alt="Cloud-Image" />
-      <h1>Quoc Ngoc Bui</h1>
-      <h2 class="small-title">
-        A passionate <span class="underline">pro</span>grammer
-      </h2>
-      <img class="bottom-cloud" src="./images/cloud.png" alt="Cloud-Image" />
-      <img src="./images/mountain.png" alt="Mountain-Image" />
+        <img class="top-cloud" src="./images/cloud.png" alt="Cloud-Image" />
+        <h1>Quoc Ngoc Bui</h1>
+        <h2 class="small-title">
+            A passionate <span class="underline">pro</span>grammer
+        </h2>
+        <img class="bottom-cloud" src="./images/cloud.png" alt="Cloud-Image" />
+        <img src="./images/mountain.png" alt="Mountain-Image" />
     </div>
 
     <div class="middle-container">
-      <div class="profile">
-        <img
-          src="./images/quoc.jpg"
-          style="border-radius: 50%; border: 5px solid green"
-          width="200px"
-          height="200px"
-          alt="My Profile Picture"
-        />
-        <h2>Hello.</h2>
-        <p>
-          I'm a programmer, who have a passion in the fields of Software
-          Development and Cybersecurity
-        </p>
-      </div>
-
-      <hr />
-      <!--Horizontal bar-->
-
-      <div class="skills">
-        <h2>My Skills.</h2>
-        <div class="skill-row">
-          <img
-            class="skill-images1"
-            src="./images/coding.png"
-            alt="Skill photo"
-          />
-          <h3>Programming</h3>
-          <p>
-            I have the knowledges on Object-Oriented Programming (OOP), Git,
-            C++, Java, JavaScript, HTML, CSS, Python, Assembly, SQL, and Roblox
-            Lua.
-          </p>
+        <div class="profile">
+            <img
+                src="./images/quoc.jpg"
+                style="border-radius: 50%; border: 5px solid green"
+                width="200px"
+                height="200px"
+                alt="My Profile Picture"
+            />
+            <h2>Hello.</h2>
+            <p>
+                I'm a programmer with a passion in the fields of Software Development and Cybersecurity. 
+                Check out my interactive Dragon Hunter game below!
+            </p>
         </div>
 
-        <div class="skill-row">
-          <img class="skill-images2" src="./images/tent.png" alt="Tent" />
-          <h3>Outdoor and Physical Activites</h3>
-          <p>
-            I enjoy fishing, camping, traveling, hiking, running, exercising,
-            socializing, and much more!
-          </p>
+        <hr />
+
+        <!-- Game Showcase Section -->
+        <div class="game-showcase">
+            <h2>🐉 Dragon Hunter Game 🐉</h2>
+            <p>An interactive 2D pixel art game showcasing web development skills with Canvas API and JavaScript. 
+            Chase dragons across 10 challenging floors, collect information tokens, and become a legendary dragon slayer!</p>
+            
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">🎮</div>
+                    <div class="feature-title">Interactive Gameplay</div>
+                    <div class="feature-desc">Chase and catch dragons across multiple floors</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🎨</div>
+                    <div class="feature-title">Pixel Art Style</div>
+                    <div class="feature-desc">Retro-inspired graphics with smooth animations</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-title">Progressive Difficulty</div>
+                    <div class="feature-desc">10 floors with increasing enemy counts</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💻</div>
+                    <div class="feature-title">Pure JavaScript</div>
+                    <div class="feature-desc">HTML5 Canvas, no external libraries</div>
+                </div>
+            </div>
+
+            <a href="./game.html" class="game-btn">▶️ Play Dragon Hunter</a>
         </div>
-      </div>
 
-      <hr />
-      <!--Horizontal bar-->
+        <hr />
 
-      <div class="contact-me">
-        <h2>Get In Touch</h2>
-        <h3>Get in touch if you enjoy coffee as much as I do</h3>
-        <p>We can enjoy a glass of iced coffee and do some coding together!</p>
-        <a class="btn" href="mailto:buixx148@umn.edu">CONTACT ME</a>
-      </div>
+        <div class="skills">
+            <h2>My Skills.</h2>
+            <div class="skill-row">
+                <img class="skill-images1" src="./images/coding.png" alt="Skill photo" />
+                <h3>Programming</h3>
+                <p>
+                    I have knowledge in Object-Oriented Programming (OOP), Git, C++, Java, JavaScript, HTML, CSS, Python, Assembly, SQL, Roblox Lua, and Game Development with Canvas.
+                </p>
+            </div>
+
+            <div class="skill-row">
+                <img class="skill-images2" src="./images/tent.png" alt="Tent" />
+                <h3>Outdoor and Physical Activities</h3>
+                <p>
+                    I enjoy fishing, camping, traveling, hiking, running, exercising, socializing, and much more!
+                </p>
+            </div>
+        </div>
+
+        <hr />
+
+        <div class="contact-me">
+            <h2>Get In Touch</h2>
+            <h3>Get in touch if you enjoy coffee as much as I do</h3>
+            <p>We can enjoy a glass of iced coffee and do some coding together!</p>
+            <a class="btn" href="mailto:buixx148@umn.edu">CONTACT ME</a>
+        </div>
     </div>
 
     <div class="bottom-container">
-      <a
-        class="footer-link"
-        href="https://www.linkedin.com/in/quoc-bui-596241b2/"
-        >LinkedIn</a
-      >
-      <a class="footer-link" href="./HTML_myCV.html">HTML CV</a>
-      <a class="footer-link" href="./QRGenerator/QR_Generator.html"
-        >QR Generator</a
-      >
-      <p class="copy-right">© 2021 Quoc Ngoc Bui.</p>
+        <a class="footer-link" href="https://www.linkedin.com/in/quoc-bui-596241b2/">LinkedIn</a>
+        <a class="footer-link" href="./game.html">Dragon Hunter Game</a>
+        <a class="footer-link" href="./HTML_myCV.html">HTML CV</a>
+        <p class="copy-right">© 2026 Quoc Ngoc Bui. All Rights Reserved.</p>
     </div>
-  </body>
+</body>
 </html>
