@@ -1,4 +1,4 @@
-// Enemy class - Dragons that flee, can be stunned, and require hammer hits.
+// Enemy class - Resume Eating Bugs that flee, can be stunned, and require hammer hits.
 class Enemy {
     constructor(x, y, options = {}) {
         this.x = x;

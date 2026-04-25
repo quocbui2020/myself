@@ -150,7 +150,7 @@ class Game {
         if (floor === 1) return 2;
         if (floor === 2) return 4;
         if (floor === 3) return 6;
-        return Math.min(20, floor + 3);
+        return Math.min(6, floor + 3);
     }
 
     getUpgradeTier(floor) {
@@ -365,13 +365,13 @@ class Game {
         document.getElementById('resumeHpText').textContent = `${hpPct}%`;
         document.getElementById('resumeHpBar').style.width = `${Math.max(0, this.resumeHealth)}%`;
 
-        let status = 'Protect your resume. Dragons try to eat it when you are far.';
+        let status = '🐛 Resume Eating Bugs try to eat when you are far.';
         if (this.currentEnemies.length === 0) {
-            status = `Floor cleared. Entering floor ${this.currentFloor + 1}...`;
+            status = `✅ Floor cleared. Entering floor ${this.currentFloor + 1}...`;
         } else if (this.resumeHealth <= 20) {
-            status = 'Critical! Resume is heavily damaged. Stun and hammer dragons away now.';
+            status = '🚨 CRITICAL! Stun and hammer the bugs away NOW!';
         } else if (this.currentFloor >= 11) {
-            status = `Monster upgrade active (Tier ${this.getUpgradeTier(this.currentFloor)}). Keep protecting the resume.`;
+            status = `🔥 Bug upgrade active (Tier ${this.getUpgradeTier(this.currentFloor)}). Bugs are STRONGER!`;
         }
         document.getElementById('statusText').textContent = status;
     }

@@ -1,190 +1,443 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quoc Ngoc Bui - Portfolio</title>
-    <link rel="stylesheet" type="text/css" href="./CSS/styles.css" />
-    <link rel="icon" href="./images/favicon.ico" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300&family=Montserrat:wght@300&family=Sacramento&display=swap" rel="stylesheet" />
+    <title>Quoc Bui - Portfolio</title>
     <style>
-        .game-showcase {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 60px 20px;
-            text-align: center;
-            margin: 40px 0;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .game-showcase h2 {
-            color: #fff;
-            margin-bottom: 20px;
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .game-showcase p {
-            color: #f0f0f0;
-            max-width: 600px;
-            margin: 20px auto;
-            font-size: 1.1em;
-        }
-
-        .game-btn {
-            display: inline-block;
-            background: #FFD700;
             color: #333;
-            padding: 15px 40px;
-            margin: 20px 10px;
-            text-decoration: none;
-            font-weight: bold;
-            border-radius: 8px;
-            font-size: 1.1em;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
+            line-height: 1.6;
+            min-height: 100vh;
         }
 
-        .game-btn:hover {
-            background: #FFA500;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 30px;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
+        /* Header & Navigation */
+        header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
         }
 
-        .feature {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex: 1;
+            min-width: 300px;
         }
 
-        .feature-icon {
-            font-size: 2em;
-            margin-bottom: 10px;
+        .profile-pic {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
 
-        .feature-title {
-            color: #FFD700;
-            font-weight: bold;
+        .header-info h1 {
+            font-size: 28px;
+            color: #667eea;
             margin-bottom: 5px;
         }
 
-        .feature-desc {
-            font-size: 0.9em;
-            color: #ddd;
+        .header-info p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .nav-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-btn.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .nav-btn.secondary:hover {
+            background: #f8f9ff;
+        }
+
+        /* Main Content */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .about-text {
+            color: #555;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        /* Skills */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .skill-group {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .skill-group h3 {
+            color: #667eea;
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .skill-item {
+            display: inline-block;
+            background: white;
+            padding: 6px 12px;
+            margin: 4px 4px 4px 0;
+            border-radius: 20px;
+            border: 1px solid #667eea;
+            color: #667eea;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Experience & Projects */
+        .experience-item,
+        .project-item,
+        .education-item {
+            background: #f8f9ff;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .experience-item h3,
+        .project-item h3,
+        .education-item h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .meta {
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Contact & Links */
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .contact-item strong {
+            color: #667eea;
+            min-width: 80px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-left {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .header-info h1 {
+                font-size: 24px;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-nav {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .skills-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+
+            header {
+                padding: 15px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .profile-pic {
+                width: 80px;
+                height: 80px;
+            }
+
+            .header-info h1 {
+                font-size: 20px;
+            }
+
+            .nav-btn {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .header-nav,
+            .nav-btn {
+                display: none;
+            }
+
+            .card {
+                page-break-inside: avoid;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-style: italic;
         }
     </style>
 </head>
-
 <body>
-    <div class="top-container">
-        <img class="top-cloud" src="./images/cloud.png" alt="Cloud-Image" />
-        <h1>Quoc Ngoc Bui</h1>
-        <h2 class="small-title">
-            A passionate <span class="underline">pro</span>grammer
-        </h2>
-        <img class="bottom-cloud" src="./images/cloud.png" alt="Cloud-Image" />
-        <img src="./images/mountain.png" alt="Mountain-Image" />
-    </div>
-
-    <div class="middle-container">
-        <div class="profile">
-            <img
-                src="./images/quoc.jpg"
-                style="border-radius: 50%; border: 5px solid green"
-                width="200px"
-                height="200px"
-                alt="My Profile Picture"
-            />
-            <h2>Hello.</h2>
-            <p>
-                I'm a programmer with a passion in the fields of Software Development and Cybersecurity. 
-                Check out my interactive Dragon Hunter game below!
-            </p>
-        </div>
-
-        <hr />
-
-        <!-- Game Showcase Section -->
-        <div class="game-showcase">
-            <h2>🐉 Dragon Hunter Game 🐉</h2>
-            <p>An interactive 2D pixel art game showcasing web development skills with Canvas API and JavaScript. 
-            Chase dragons across 10 challenging floors, collect information tokens, and become a legendary dragon slayer!</p>
-            
-            <div class="features-grid">
-                <div class="feature">
-                    <div class="feature-icon">🎮</div>
-                    <div class="feature-title">Interactive Gameplay</div>
-                    <div class="feature-desc">Chase and catch dragons across multiple floors</div>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🎨</div>
-                    <div class="feature-title">Pixel Art Style</div>
-                    <div class="feature-desc">Retro-inspired graphics with smooth animations</div>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">📈</div>
-                    <div class="feature-title">Progressive Difficulty</div>
-                    <div class="feature-desc">10 floors with increasing enemy counts</div>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">💻</div>
-                    <div class="feature-title">Pure JavaScript</div>
-                    <div class="feature-desc">HTML5 Canvas, no external libraries</div>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <img src="quoc.jpg" alt="Profile Picture" class="profile-pic" onerror="this.style.display='none'">
+                <div class="header-info">
+                    <h1 id="personName">Quoc Bui</h1>
+                    <p id="personTitle">Full Stack Developer</p>
                 </div>
             </div>
+            <div class="header-nav">
+                <a href="game.html" class="nav-btn">Play Game</a>
+                <button class="nav-btn secondary" onclick="scrollToSection('resume')">Resume</button>
+                <button class="nav-btn secondary" onclick="scrollToSection('contact')">Contact</button>
+            </div>
+        </header>
 
-            <a href="./game.html" class="game-btn">▶️ Play Dragon Hunter</a>
-        </div>
-
-        <hr />
-
-        <div class="skills">
-            <h2>My Skills.</h2>
-            <div class="skill-row">
-                <img class="skill-images1" src="./images/coding.png" alt="Skill photo" />
-                <h3>Programming</h3>
-                <p>
-                    I have knowledge in Object-Oriented Programming (OOP), Git, C++, Java, JavaScript, HTML, CSS, Python, Assembly, SQL, Roblox Lua, and Game Development with Canvas.
-                </p>
+        <div class="content-grid">
+            <div class="card">
+                <h2>About Me</h2>
+                <p class="about-text" id="aboutText">Loading...</p>
             </div>
 
-            <div class="skill-row">
-                <img class="skill-images2" src="./images/tent.png" alt="Tent" />
-                <h3>Outdoor and Physical Activities</h3>
-                <p>
-                    I enjoy fishing, camping, traveling, hiking, running, exercising, socializing, and much more!
-                </p>
+            <div class="card" id="contact">
+                <h2>Contact</h2>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <strong>Email:</strong>
+                        <span id="personEmail">-</span>
+                    </div>
+                    <div class="contact-item">
+                        <strong>Phone:</strong>
+                        <span id="personPhone">-</span>
+                    </div>
+                    <div class="contact-item">
+                        <strong>Location:</strong>
+                        <span id="personLocation">-</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <hr />
+        <div class="card">
+            <h2>Skills</h2>
+            <div class="skills-grid" id="skillsContainer">
+                <div class="empty-state">Loading skills...</div>
+            </div>
+        </div>
 
-        <div class="contact-me">
-            <h2>Get In Touch</h2>
-            <h3>Get in touch if you enjoy coffee as much as I do</h3>
-            <p>We can enjoy a glass of iced coffee and do some coding together!</p>
-            <a class="btn" href="mailto:buixx148@umn.edu">CONTACT ME</a>
+        <div class="card" id="resume">
+            <h2>Experience</h2>
+            <div id="experienceContainer">
+                <div class="empty-state">Loading experience...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Projects</h2>
+            <div id="projectsContainer">
+                <div class="empty-state">Loading projects...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Education</h2>
+            <div id="educationContainer">
+                <div class="empty-state">Loading education...</div>
+            </div>
         </div>
     </div>
 
-    <div class="bottom-container">
-        <a class="footer-link" href="https://www.linkedin.com/in/quoc-bui-596241b2/">LinkedIn</a>
-        <a class="footer-link" href="./game.html">Dragon Hunter Game</a>
-        <a class="footer-link" href="./HTML_myCV.html">HTML CV</a>
-        <p class="copy-right">© 2026 Quoc Ngoc Bui. All Rights Reserved.</p>
-    </div>
+    <script>
+        // Load resume data from JSON
+        async function loadResume() {
+            try {
+                const response = await fetch('resume.json');
+                const data = await response.json();
+                renderResume(data);
+            } catch (error) {
+                console.error('Error loading resume:', error);
+            }
+        }
+
+        function renderResume(data) {
+            // Personal info
+            document.getElementById('personName').textContent = data.personal.name;
+            document.getElementById('personTitle').textContent = data.personal.title;
+            document.getElementById('aboutText').textContent = data.personal.about;
+            document.getElementById('personEmail').textContent = data.personal.email;
+            document.getElementById('personPhone').textContent = data.personal.phone;
+            document.getElementById('personLocation').textContent = data.personal.location;
+
+            // Skills
+            const skillsContainer = document.getElementById('skillsContainer');
+            skillsContainer.innerHTML = data.skills.map(skillGroup => `
+                <div class="skill-group">
+                    <h3>${skillGroup.category}</h3>
+                    ${skillGroup.items.map(item => `<div class="skill-item">${item}</div>`).join('')}
+                </div>
+            `).join('');
+
+            // Experience
+            const experienceContainer = document.getElementById('experienceContainer');
+            experienceContainer.innerHTML = data.experience.map(exp => `
+                <div class="experience-item">
+                    <h3>${exp.title}</h3>
+                    <div class="meta">${exp.company} • ${exp.duration}</div>
+                    <div class="description">${exp.description}</div>
+                </div>
+            `).join('') || '<div class="empty-state">No experience listed</div>';
+
+            // Projects
+            const projectsContainer = document.getElementById('projectsContainer');
+            projectsContainer.innerHTML = data.projects.map(proj => `
+                <div class="project-item">
+                    <h3>${proj.name}</h3>
+                    <div class="description">${proj.description}</div>
+                </div>
+            `).join('') || '<div class="empty-state">No projects listed</div>';
+
+            // Education
+            const educationContainer = document.getElementById('educationContainer');
+            educationContainer.innerHTML = data.education.map(edu => `
+                <div class="education-item">
+                    <h3>${edu.degree}</h3>
+                    <div class="meta">${edu.school} • ${edu.year}</div>
+                    <div class="description">${edu.field}</div>
+                </div>
+            `).join('') || '<div class="empty-state">No education listed</div>';
+        }
+
+        function scrollToSection(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Load resume when page loads
+        loadResume();
+    </script>
 </body>
 </html>
