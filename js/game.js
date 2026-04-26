@@ -515,6 +515,24 @@ class Game {
         return y;
     }
 
+    drawRightAlignedText(text, rightX, y) {
+        const str = String(text || '');
+        const width = this.ctx.measureText(str).width;
+        this.ctx.fillText(str, rightX - width, y);
+    }
+
+    drawSectionTitle(text, x, y, width) {
+        this.ctx.fillStyle = '#2b2b2b';
+        this.ctx.font = 'bold 19px Georgia';
+        this.ctx.fillText(text, x, y);
+        this.ctx.strokeStyle = 'rgba(70, 70, 70, 0.25)';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y + 6);
+        this.ctx.lineTo(x + width, y + 6);
+        this.ctx.stroke();
+    }
+
     drawWorldNotes() {
         const leftX = this.resumeRect.x - 290;
         const topY = this.resumeRect.y + 80;
@@ -601,92 +619,117 @@ class Game {
         this.ctx.lineWidth = 3;
         this.ctx.strokeRect(x, y, pageW, pageH);
 
-        this.ctx.fillStyle = '#594a32';
-        this.ctx.font = 'bold 44px Georgia';
-        this.ctx.fillText('PROTECT MY RESUME', x + 26, y + 58);
+        const padX = 34;
+        const top = y + 34;
+        const left = x + padX;
+        const right = x + pageW - padX;
+        const contentW = pageW - padX * 2;
+        let cursorY = top;
+
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(left, y + 20, contentW, pageH - 38);
+        this.ctx.clip();
 
         if (this.resumeData && this.resumeData.personal) {
             const p = this.resumeData.personal;
-            this.ctx.font = 'bold 22px Georgia';
-            this.ctx.fillStyle = '#574934';
-            this.ctx.fillText((p.name || '').toUpperCase(), x + 26, y + 96);
 
-            this.ctx.font = 'italic 18px Georgia';
-            this.ctx.fillText(`${p.title || ''} | ${p.phone || ''} | ${p.email || ''}`, x + 26, y + 124);
+            this.ctx.fillStyle = '#2f2921';
+            this.ctx.font = 'bold 40px Georgia';
+            const name = String((p.name || '').toUpperCase());
+            const nameW = this.ctx.measureText(name).width;
+            this.ctx.fillText(name, x + (pageW - nameW) / 2, cursorY);
+            cursorY += 38;
 
-            let cursorY = y + 160;
-            const textW = pageW - 52;
+            this.ctx.font = 'bold 24px Georgia';
+            const title = String(p.title || 'Software Developer');
+            const titleW = this.ctx.measureText(title).width;
+            this.ctx.fillText(title, x + (pageW - titleW) / 2, cursorY);
+            cursorY += 30;
 
-            this.ctx.font = 'bold 20px Georgia';
-            this.ctx.fillStyle = '#4f3f2b';
-            this.ctx.fillText('SUMMARY', x + 26, cursorY);
-            cursorY += 24;
+            this.ctx.font = 'italic 17px Georgia';
+            this.ctx.fillStyle = '#4c4336';
+            const contact = `phone: ${p.phone || ''} || ${p.email || ''}`;
+            const contactW = this.ctx.measureText(contact).width;
+            this.ctx.fillText(contact, x + (pageW - contactW) / 2, cursorY);
+            cursorY += 26;
 
+            this.drawSectionTitle('SUMMARY', left, cursorY, contentW);
+            cursorY += 26;
             this.ctx.font = '16px Georgia';
-            this.ctx.fillStyle = '#66543d';
-            cursorY = this.drawWrappedText(this.resumeData.summary || '', x + 26, cursorY, textW, 22, 4);
+            this.ctx.fillStyle = '#4a4438';
+            cursorY = this.drawWrappedText(this.resumeData.summary || '', left, cursorY, contentW, 22, 7);
+            cursorY += 14;
+
+            this.drawSectionTitle('TECHNICAL SKILLS', left, cursorY, contentW);
+            cursorY += 26;
+            this.ctx.font = '16px Georgia';
+            this.ctx.fillStyle = '#4a4438';
+            const skills = Array.isArray(this.resumeData.technicalSkills) ? this.resumeData.technicalSkills.slice(0, 7) : [];
+            for (const skill of skills) {
+                const skillLine = `${skill.label}: ${(skill.items || []).join(', ')}`;
+                cursorY = this.drawWrappedText(skillLine, left, cursorY, contentW, 21, 3);
+                cursorY += 4;
+            }
             cursorY += 10;
 
-            this.ctx.font = 'bold 20px Georgia';
-            this.ctx.fillStyle = '#4f3f2b';
-            this.ctx.fillText('TECHNICAL SKILLS', x + 26, cursorY);
-            cursorY += 24;
-
-            this.ctx.font = '16px Georgia';
-            this.ctx.fillStyle = '#66543d';
-            const skills = Array.isArray(this.resumeData.technicalSkills) ? this.resumeData.technicalSkills.slice(0, 4) : [];
-            for (const skill of skills) {
-                const line = `${skill.label}: ${(skill.items || []).join(', ')}`;
-                cursorY = this.drawWrappedText(line, x + 26, cursorY, textW, 20, 2);
-                cursorY += 2;
-            }
-            cursorY += 8;
-
-            this.ctx.font = 'bold 20px Georgia';
-            this.ctx.fillStyle = '#4f3f2b';
-            this.ctx.fillText('WORK EXPERIENCE', x + 26, cursorY);
-            cursorY += 24;
-
-            const jobs = Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience.slice(0, 2) : [];
+            this.drawSectionTitle('WORK EXPERIENCES', left, cursorY, contentW);
+            cursorY += 28;
+            const jobs = Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience : [];
             for (const job of jobs) {
-                this.ctx.font = 'bold 16px Georgia';
-                this.ctx.fillStyle = '#5a4934';
-                this.ctx.fillText(`${job.title} (${job.dateRange})`, x + 26, cursorY);
+                if (cursorY > y + pageH - 220) break;
+                this.ctx.fillStyle = '#2f2a22';
+                this.ctx.font = 'bold 19px Georgia';
+                this.ctx.fillText(job.title || '', left, cursorY);
+                this.drawRightAlignedText(job.dateRange || '', right, cursorY);
+                cursorY += 24;
+
+                this.ctx.font = '17px Georgia';
+                this.ctx.fillStyle = '#4c4336';
+                this.ctx.fillText(job.company || '', left, cursorY);
                 cursorY += 20;
 
-                this.ctx.font = 'italic 15px Georgia';
-                this.ctx.fillText(job.company || '', x + 26, cursorY);
-                cursorY += 20;
-
-                this.ctx.font = '15px Georgia';
-                this.ctx.fillStyle = '#66543d';
-                const firstBullet = Array.isArray(job.highlights) && job.highlights.length ? `- ${job.highlights[0]}` : '';
-                cursorY = this.drawWrappedText(firstBullet, x + 26, cursorY, textW, 19, 2);
-                cursorY += 8;
+                this.ctx.font = '16px Georgia';
+                const highlights = Array.isArray(job.highlights) ? job.highlights.slice(0, 4) : [];
+                for (const bullet of highlights) {
+                    if (cursorY > y + pageH - 170) break;
+                    this.ctx.fillText('•', left + 4, cursorY);
+                    cursorY = this.drawWrappedText(bullet, left + 24, cursorY, contentW - 24, 20, 2);
+                    cursorY += 2;
+                }
+                cursorY += 10;
             }
 
-            this.ctx.font = 'bold 20px Georgia';
-            this.ctx.fillStyle = '#4f3f2b';
-            this.ctx.fillText('EDUCATION', x + 26, cursorY);
-            cursorY += 24;
-
-            this.ctx.font = '15px Georgia';
-            this.ctx.fillStyle = '#66543d';
-            const edu = Array.isArray(this.resumeData.education) ? this.resumeData.education.slice(0, 2) : [];
-            for (const item of edu) {
-                cursorY = this.drawWrappedText(`${item.degree} - ${item.dateRange}`, x + 26, cursorY, textW, 19, 2);
-                cursorY = this.drawWrappedText(item.institution || '', x + 26, cursorY, textW, 19, 2);
-                cursorY += 6;
+            if (cursorY < y + pageH - 140) {
+                this.drawSectionTitle('EDUCATION', left, cursorY, contentW);
+                cursorY += 26;
+                this.ctx.font = '16px Georgia';
+                this.ctx.fillStyle = '#4a4438';
+                const edu = Array.isArray(this.resumeData.education) ? this.resumeData.education : [];
+                for (const item of edu) {
+                    if (cursorY > y + pageH - 80) break;
+                    this.ctx.font = 'bold 17px Georgia';
+                    this.ctx.fillStyle = '#2f2a22';
+                    this.ctx.fillText(item.degree || '', left, cursorY);
+                    this.drawRightAlignedText(item.dateRange || '', right, cursorY);
+                    cursorY += 22;
+                    this.ctx.font = '16px Georgia';
+                    this.ctx.fillStyle = '#4a4438';
+                    cursorY = this.drawWrappedText(item.institution || '', left, cursorY, contentW, 20, 2);
+                    cursorY += 8;
+                }
             }
         } else {
             this.ctx.font = '18px Georgia';
             this.ctx.fillStyle = '#6f5e44';
-            this.ctx.fillText('Resume data unavailable in this session.', x + 26, y + 100);
+            this.ctx.fillText('Resume data unavailable in this session.', left, y + 100);
             if (this.resumeLoadError) {
                 this.ctx.font = '15px Georgia';
-                this.ctx.fillText('Tip: open index.html once or run with Live Server, then return to game.', x + 26, y + 130);
+                this.ctx.fillText('Tip: open index.html once or run with Live Server, then return to game.', left, y + 130);
             }
         }
+
+        this.ctx.restore();
 
         const healthGlow = Math.max(0, 1 - this.resumeHealth / 100);
         if (healthGlow > 0.05) {
