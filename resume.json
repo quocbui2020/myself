@@ -1,92 +1,143 @@
 {
   "personal": {
-    "name": "Quoc Ngoc Bui",
+    "name": "QUOC NGOC BUI",
     "title": "Software Developer",
-    "email": "quocbui824@gmail.com",
     "phone": "507-606-9253",
-    "location": "Minnesota, USA",
-    "about": "Software Developer with 4+ years of hands-on experience developing and maintaining web applications. Experienced with C#, .NET Framework, .NET Core, Angular, React, TypeScript, and T-SQL. Strong background in production environments and application development lifecycle. Go-to person for payment gateway implementation and critical system issues. Seeking to apply expertise in modernizing and supporting core application platforms."
+    "email": "quocbui824@gmail.com"
   },
-  "skills": [
+  "summary": "Software Developer with 4+ years of hands-on experience developing and maintaining web applications. Experienced with C#, .NET Framework, .NET Core, Angular, React, TypeScript, and T-SQL. Strong background in production environments and application development lifecycle. Go-to person for payment gateway implementation and critical system issues. Seeking to apply expertise in modernizing and supporting core application platforms.",
+  "technicalSkills": [
     {
-      "category": "Languages & Frameworks",
-      "items": ["C#", ".NET Framework", ".NET Core", ".NET 8", "ASP.NET", "TypeScript", "JavaScript", "Python", "SQL", "HTML/CSS", "C++"]
+      "label": "Languages & Frameworks",
+      "items": [
+        "C#",
+        ".NET Framework",
+        ".NET Core",
+        ".NET 8",
+        "ASP.NET",
+        "TypeScript",
+        "JavaScript",
+        "Python",
+        "SQL",
+        "HTML/CSS",
+        "C++"
+      ]
     },
     {
-      "category": "Databases & Data Services",
-      "items": ["T-SQL", "SQL Server", "Microsoft SQL Server", "Entity Framework", "Dapper", "Relational Databases"]
+      "label": "Databases & Data Services",
+      "items": [
+        "T-SQL",
+        "SQL Server",
+        "Microsoft SQL Server",
+        "Entity Framework",
+        "Dapper",
+        "Relational Databases"
+      ]
     },
     {
-      "category": "Cloud & DevOps",
-      "items": ["Microsoft Azure", "Azure DevOps", "Azure Pipelines", "CI/CD"]
+      "label": "Cloud & DevOps",
+      "items": [
+        "Microsoft Azure",
+        "Azure DevOps",
+        "Azure Pipelines"
+      ]
     },
     {
-      "category": "Web Technologies",
-      "items": ["AngularJS", "React", "RESTful APIs", "JSON", "Swagger"]
+      "label": "Web Technologies",
+      "items": [
+        "AngularJS",
+        "React",
+        "RESTful APIs",
+        "JSON",
+        "Swagger"
+      ]
     },
     {
-      "category": "Tools & Practices",
-      "items": ["Git", "Azure DevOps", "Microsoft Visual Studio", "Postman", "Agile", "Unit Testing", "Integration Testing", "SDLC"]
+      "label": "Tools & Practices",
+      "items": [
+        "Git",
+        "Azure DevOps",
+        "Microsoft Visual Studio",
+        "Postman",
+        "CI/CD",
+        "Agile",
+        "Unit Testing",
+        "Integration Testing"
+      ]
     },
     {
-      "category": "Certifications",
-      "items": ["Microsoft Certified: Azure Fundamentals (AZ-900)"]
+      "label": "Certifications",
+      "items": [
+        "Microsoft Certified: Azure Fundamentals (AZ-900)"
+      ]
+    },
+    {
+      "label": "Other Skills",
+      "items": [
+        "Agile Methodology",
+        "SDLC",
+        "Copilot AI for coding",
+        "Code Rabbit AI for PR reviewing"
+      ]
     }
   ],
-  "experience": [
+  "workExperience": [
     {
       "title": "Software Developer",
       "company": "ImageTrend, LLC.",
-      "duration": "Current",
-      "description": "Owned end-to-end design, development, architecture and maintenance of payment gateway platform integrating 22+ payment integrations across C#/.NET stack. Led Payment Gateway Framework project designing and developing secure payment integrations. Architected and delivered .NET 8 migration for legacy systems with full CI/CD pipeline remediation across Azure DevOps. Implemented JWT, OAuth, and AES encryption to protect sensitive payment data. Maintained unit and integration test suites under Agile sprints. Designed and documented REST APIs as integration layer. Built and maintained web frontend features using React, TypeScript, and AngularJS for production enterprise applications."
+      "dateRange": "Current",
+      "highlights": [
+        "Owned end-to-end design, development, architecture and maintenance of payment gateway platform integrating 22+ payment integrations across C#/.NET stack.",
+        "Led Payment Gateway Framework project - designed and developed secure payment integrations for multiple payment services.",
+        "Architected and delivered .NET 8 migration for legacy systems, including assisting senior developer on full CI/CD pipeline remediation across Azure DevOps.",
+        "Implemented JWT, OAuth, and AES encryption to protect sensitive payment data and prevent security vulnerabilities in production.",
+        "Maintained unit and integration test suites under Agile sprints using Azure DevOps, ensuring production code quality.",
+        "Designed and documented REST APIs serves as the integration layer between payment data sources and application layers.",
+        "Collaborated with clients to gather and clarify requirements.",
+        "Supported production environments and resolved critical application issues.",
+        "Built and maintained web frontend features using React, TypeScript, and AngularJS for production enterprise applications."
+      ]
     },
     {
-      "title": "Cybersecurity Analyst / VAPT Assistant",
+      "title": "Cybersecurity Analyst / Vulnerability Assessment and Penetration Testing Assistant",
       "company": "Metropolitan State University",
-      "duration": "October 2022 - June 2023",
-      "description": "Performed penetration testing and vulnerability assessments for a contractor, applying security analysis across networked systems and applications."
+      "dateRange": "October 2022 - June 2023",
+      "highlights": [
+        "Performed penetration testing and vulnerability assessments for a contractor, applying security analysis across networked systems and applications."
+      ]
     },
     {
       "title": "Application Developer",
       "company": "Normandale Community College",
-      "duration": "August 2021 - June 2022",
-      "description": "Developed WinForms applications with C# .NET Framework using Microsoft Visual Studio. Designed and executed complex SQL queries using Microsoft SQL Server. Developed RESTful APIs and JSON data structures using .NET framework for client-server communication."
-    }
-  ],
-  "projects": [
-    {
-      "name": "Resume Defense Game",
-      "description": "Interactive pixel-art game demonstrating web development skills. Features real-time combat gameplay, persistent damage mechanics, and responsive design with hotkey controls.",
-      "link": "game.html"
-    },
-    {
-      "name": "Professional Portfolio",
-      "description": "JSON-driven portfolio website with responsive design. Dynamically loads resume data for easy updates without code changes.",
-      "link": "#"
-    },
-    {
-      "name": "Payment Gateway Platform",
-      "description": "Designed and developed secure payment integration platform supporting 22+ payment services using C# .NET stack with JWT, OAuth, and AES encryption."
+      "dateRange": "August 2021 - June 2022",
+      "highlights": [
+        "Developed WinForms applications with C# .NET Framework using Microsoft Visual Studio.",
+        "Designed and executed complex SQL queries using Microsoft SQL Server.",
+        "Developed RESTful APIs and JSON data structures using .NET framework for client-server communication."
+      ]
     }
   ],
   "education": [
     {
-      "degree": "Online Doctor of Philosophy (PhD) in Computer Science",
-      "field": "Software Engineering, Machine Learning, Requirement Engineering, Software Security",
-      "school": "Bagley College of Engineering, Mississippi State University",
-      "year": "Current"
+      "degree": "Online Doctor of Philosophy (PhD) Student in Computer Science",
+      "institution": "Bagley College of Engineering, Mississippi State University, Starkville, MS.",
+      "dateRange": "Current",
+      "highlights": [
+        "Areas of Focus: Software Engineering, Machine Learning, Requirement Engineering and Software Security.",
+        "3+ years building Python-based data processing pipelines for collecting, transforming, and integrating structured data from multiple sources to support automated analysis workflows."
+      ]
     },
     {
-      "degree": "Master of Science in Cyber Operations",
-      "field": "Computer Science and Cybersecurity (GPA: 4.0)",
-      "school": "Metropolitan State University",
-      "year": "December 2022"
+      "degree": "Master of Science in Cyber Operations, 4.0",
+      "institution": "Computer Science and Cybersecurity, Metropolitan State University, St. Paul, MN.",
+      "dateRange": "December 2022",
+      "highlights": []
     },
     {
       "degree": "Bachelor of Computer Engineering",
-      "field": "Computer Engineering",
-      "school": "University of Minnesota, Twin Cities",
-      "year": "August 2020"
+      "institution": "College of Science and Engineering, University of Minnesota, Twin Cities, Minneapolis, MN.",
+      "dateRange": "August 2020",
+      "highlights": []
     }
   ]
 }

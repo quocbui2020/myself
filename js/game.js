@@ -9,6 +9,12 @@ class Game {
         this.worldHeight = 0;
         this.cameraX = 0;
         this.cameraY = 0;
+        this.cameraDeadzoneX = 0;
+        this.cameraDeadzoneY = 0;
+
+        // Keep world dimensions fixed regardless of browser zoom or viewport size.
+        this.fixedWorldWidth = 2200;
+        this.fixedWorldHeight = 1400;
 
         this.currentFloor = 1;
         this.currentEnemies = [];
@@ -29,6 +35,17 @@ class Game {
         this.stunMs = 2200;
         this.resumeHealth = 100;
         this.resumeRect = { x: 0, y: 0, width: 0, height: 0 };
+        this.showResumeNote = false;
+        this.resumeData = this.getCachedResumeData();
+        this.resumeLoadError = false;
+        this.hudState = {
+            floorLevel: '1',
+            caughtCount: '0 / 2',
+            progressPct: 0,
+            resumeHpText: '100%',
+            resumeHpPct: 100,
+            status: 'Resume Eating Bugs try to eat when you are far.'
+        };
 
         this.deskImage = new Image();
         this.deskImageLoaded = false;
@@ -36,13 +53,14 @@ class Game {
             this.deskImageLoaded = true;
         };
         this.deskImage.src = 'images/desk-texture.svg';
+        this.loadResumeData();
 
         this.particles = new ParticleSystem();
 
         this.resizeCanvas();
         this.player = new Player(this.worldWidth * 0.5, this.worldHeight * 0.5);
         this.player.setTarget(this.worldWidth * 0.5, this.worldHeight * 0.5);
-        this.updateCamera();
+        this.centerCameraOnPlayer();
 
         this.spawnFloorEnemies();
         this.bindEvents();
@@ -72,6 +90,45 @@ class Game {
                 this.swingHammer(event);
             }
         });
+
+        window.addEventListener('keydown', (event) => {
+            const key = event.key.toLowerCase();
+            if (key === 'r') {
+                event.preventDefault();
+                this.resetGame();
+            } else if (key === 'b') {
+                event.preventDefault();
+                window.history.back();
+            } else if (key === 'p') {
+                event.preventDefault();
+                this.showResumeNote = !this.showResumeNote;
+            }
+        });
+    }
+
+    async loadResumeData() {
+        try {
+            const response = await fetch('resume.json');
+            if (!response.ok) return;
+            this.resumeData = await response.json();
+            this.resumeLoadError = false;
+            try {
+                localStorage.setItem('resumeDataCache', JSON.stringify(this.resumeData));
+            } catch (_) {
+                // Ignore storage failures (private mode / storage disabled).
+            }
+        } catch (_) {
+            this.resumeLoadError = !this.resumeData;
+        }
+    }
+
+    getCachedResumeData() {
+        try {
+            const raw = localStorage.getItem('resumeDataCache');
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            return null;
+        }
     }
 
     getMousePosition(event) {
@@ -94,9 +151,10 @@ class Game {
         this.canvas.width = this.width;
         this.canvas.height = this.height;
 
-        // Keep map larger than one viewport, but not excessively large.
-        this.worldWidth = Math.max(this.width * 1.1, this.width + 200);
-        this.worldHeight = Math.max(this.height * 1.1, this.height + 150);
+        this.worldWidth = this.fixedWorldWidth;
+        this.worldHeight = this.fixedWorldHeight;
+        this.cameraDeadzoneX = this.width * 0.22;
+        this.cameraDeadzoneY = this.height * 0.2;
         this.updateResumeRect();
 
         if (this.player) {
@@ -131,16 +189,38 @@ class Game {
         }
 
         const center = this.player.getCenter();
-        this.cameraX = center.x - this.width / 2;
-        this.cameraY = center.y - this.height / 2;
+
+        const playerScreenX = center.x - this.cameraX;
+        const playerScreenY = center.y - this.cameraY;
+
+        if (playerScreenX < this.cameraDeadzoneX) {
+            this.cameraX = center.x - this.cameraDeadzoneX;
+        } else if (playerScreenX > this.width - this.cameraDeadzoneX) {
+            this.cameraX = center.x - (this.width - this.cameraDeadzoneX);
+        }
+
+        if (playerScreenY < this.cameraDeadzoneY) {
+            this.cameraY = center.y - this.cameraDeadzoneY;
+        } else if (playerScreenY > this.height - this.cameraDeadzoneY) {
+            this.cameraY = center.y - (this.height - this.cameraDeadzoneY);
+        }
 
         this.cameraX = Math.max(0, Math.min(this.cameraX, this.worldWidth - this.width));
         this.cameraY = Math.max(0, Math.min(this.cameraY, this.worldHeight - this.height));
     }
 
+    centerCameraOnPlayer() {
+        if (!this.player) return;
+        const center = this.player.getCenter();
+        this.cameraX = center.x - this.width / 2;
+        this.cameraY = center.y - this.height / 2;
+        this.cameraX = Math.max(0, Math.min(this.cameraX, this.worldWidth - this.width));
+        this.cameraY = Math.max(0, Math.min(this.cameraY, this.worldHeight - this.height));
+    }
+
     updateResumeRect() {
-        const pageW = Math.min(1200, this.worldWidth * 0.62);
-        const pageH = Math.min(780, this.worldHeight * 0.62);
+        const pageW = Math.min(980, this.worldWidth * 0.5);
+        const pageH = Math.min(980, this.worldHeight * 0.78);
         const x = (this.worldWidth - pageW) / 2;
         const y = (this.worldHeight - pageH) / 2;
         this.resumeRect = { x, y, width: pageW, height: pageH };
@@ -265,7 +345,7 @@ class Game {
             branches.push(points);
         }
 
-        this.cracks.push({ branches, life: 900 });
+        this.cracks.push({ branches, life: 240 });
         if (this.cracks.length > 180) {
             this.cracks.shift();
         }
@@ -357,13 +437,9 @@ class Game {
 
     updateHud() {
         const total = this.getEnemyCountForFloor(this.currentFloor);
-        document.getElementById('floorLevel').textContent = String(this.currentFloor);
-        document.getElementById('caughtCount').textContent = `${this.defeatedThisFloor} / ${total}`;
-        document.getElementById('progressBar').style.width = `${(this.defeatedThisFloor / total) * 100}%`;
+        const progressPct = (this.defeatedThisFloor / total) * 100;
 
         const hpPct = Math.round(this.resumeHealth);
-        document.getElementById('resumeHpText').textContent = `${hpPct}%`;
-        document.getElementById('resumeHpBar').style.width = `${Math.max(0, this.resumeHealth)}%`;
 
         let status = '🐛 Resume Eating Bugs try to eat when you are far.';
         if (this.currentEnemies.length === 0) {
@@ -373,7 +449,131 @@ class Game {
         } else if (this.currentFloor >= 11) {
             status = `🔥 Bug upgrade active (Tier ${this.getUpgradeTier(this.currentFloor)}). Bugs are STRONGER!`;
         }
-        document.getElementById('statusText').textContent = status;
+
+        this.hudState.floorLevel = String(this.currentFloor);
+        this.hudState.caughtCount = `${this.defeatedThisFloor} / ${total}`;
+        this.hudState.progressPct = progressPct;
+        this.hudState.resumeHpText = `${hpPct}%`;
+        this.hudState.resumeHpPct = Math.max(0, this.resumeHealth);
+        this.hudState.status = status;
+
+        const floorLevelEl = document.getElementById('floorLevel');
+        if (floorLevelEl) floorLevelEl.textContent = this.hudState.floorLevel;
+        const caughtCountEl = document.getElementById('caughtCount');
+        if (caughtCountEl) caughtCountEl.textContent = this.hudState.caughtCount;
+        const progressBarEl = document.getElementById('progressBar');
+        if (progressBarEl) progressBarEl.style.width = `${this.hudState.progressPct}%`;
+        const resumeHpTextEl = document.getElementById('resumeHpText');
+        if (resumeHpTextEl) resumeHpTextEl.textContent = this.hudState.resumeHpText;
+        const resumeHpBarEl = document.getElementById('resumeHpBar');
+        if (resumeHpBarEl) resumeHpBarEl.style.width = `${this.hudState.resumeHpPct}%`;
+        const statusEl = document.getElementById('statusText');
+        if (statusEl) statusEl.textContent = this.hudState.status;
+    }
+
+    drawStickyNote(x, y, width, height, color, angle) {
+        this.ctx.save();
+        this.ctx.translate(x + width / 2, y + height / 2);
+        this.ctx.rotate(angle);
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        this.ctx.fillRect(-width / 2 + 6, -height / 2 + 7, width, height);
+        this.ctx.fillStyle = color;
+        this.ctx.fillRect(-width / 2, -height / 2, width, height);
+        this.ctx.strokeStyle = 'rgba(96, 77, 45, 0.25)';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(-width / 2, -height / 2, width, height);
+        this.ctx.restore();
+    }
+
+    getWrappedLines(text, maxWidth) {
+        const source = String(text || '').trim();
+        if (!source) return [];
+        const words = source.split(/\s+/);
+        const lines = [];
+        let line = '';
+
+        for (const word of words) {
+            const next = line ? `${line} ${word}` : word;
+            if (this.ctx.measureText(next).width <= maxWidth) {
+                line = next;
+            } else {
+                if (line) lines.push(line);
+                line = word;
+            }
+        }
+        if (line) lines.push(line);
+        return lines;
+    }
+
+    drawWrappedText(text, x, y, maxWidth, lineHeight, maxLines = Infinity) {
+        const lines = this.getWrappedLines(text, maxWidth);
+        const count = Math.min(lines.length, maxLines);
+        for (let i = 0; i < count; i++) {
+            this.ctx.fillText(lines[i], x, y);
+            y += lineHeight;
+        }
+        return y;
+    }
+
+    drawWorldNotes() {
+        const leftX = this.resumeRect.x - 290;
+        const topY = this.resumeRect.y + 80;
+
+        this.drawStickyNote(leftX, topY, 260, 180, '#fff2a8', -0.05);
+        this.ctx.fillStyle = '#4b3a20';
+        this.ctx.font = 'bold 18px Comic Sans MS';
+        this.ctx.fillText('Protect My Resume', leftX + 18, topY + 32);
+        this.ctx.font = '14px Comic Sans MS';
+        this.ctx.fillText(`Floor: ${this.hudState.floorLevel}`, leftX + 18, topY + 58);
+        this.ctx.fillText(`Bugs: ${this.hudState.caughtCount}`, leftX + 18, topY + 80);
+        this.ctx.fillText(`HP: ${this.hudState.resumeHpText}`, leftX + 18, topY + 102);
+
+        this.ctx.fillStyle = '#efe1a0';
+        this.ctx.fillRect(leftX + 18, topY + 118, 220, 9);
+        this.ctx.fillStyle = '#f08b4f';
+        this.ctx.fillRect(leftX + 18, topY + 118, 220 * (this.hudState.progressPct / 100), 9);
+
+        this.ctx.fillStyle = '#e6d78f';
+        this.ctx.fillRect(leftX + 18, topY + 136, 220, 9);
+        this.ctx.fillStyle = '#63c57a';
+        this.ctx.fillRect(leftX + 18, topY + 136, 220 * (this.hudState.resumeHpPct / 100), 9);
+
+        this.drawStickyNote(this.resumeRect.x + this.resumeRect.width + 34, this.resumeRect.y + 90, 240, 150, '#d8f0ff', 0.06);
+        this.ctx.fillStyle = '#2f3e49';
+        this.ctx.font = 'bold 16px Comic Sans MS';
+        this.ctx.fillText('Instructions', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 120);
+        this.ctx.font = '13px Comic Sans MS';
+        this.ctx.fillText('Move: Follow cursor', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 146);
+        this.ctx.fillText('Left Click: Hammer', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 166);
+        this.ctx.fillText('Right Click: Stun gun', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
+        this.ctx.fillText('Hotkeys: R reset, B back, P note', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 206);
+
+        if (this.showResumeNote) {
+            const noteX = this.resumeRect.x + 60;
+            const noteY = this.resumeRect.y + this.resumeRect.height - 300;
+            const noteW = 520;
+            const noteH = 250;
+            this.drawStickyNote(noteX, noteY, noteW, noteH, '#ffe9d5', 0.02);
+            this.ctx.fillStyle = '#4d3a28';
+            this.ctx.font = 'bold 17px Comic Sans MS';
+            this.ctx.fillText('Resume Snapshot (P to toggle)', noteX + 18, noteY + 30);
+            this.ctx.font = '14px Comic Sans MS';
+
+            if (this.resumeData && this.resumeData.personal) {
+                const p = this.resumeData.personal;
+                this.ctx.fillText(`${p.name || ''} - ${p.title || ''}`, noteX + 18, noteY + 56);
+                this.ctx.fillText(`${p.email || ''} | ${p.phone || ''}`, noteX + 18, noteY + 78);
+            }
+
+            const exp = this.resumeData && Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience.slice(0, 3) : [];
+            let y = noteY + 106;
+            for (const item of exp) {
+                this.ctx.fillText(`- ${item.title} @ ${item.company}`, noteX + 18, y);
+                y += 22;
+            }
+            this.ctx.fillStyle = '#6b5845';
+            this.ctx.fillText(this.hudState.status, noteX + 18, noteY + noteH - 18);
+        }
     }
 
     drawResumeTerrain() {
@@ -402,35 +602,90 @@ class Game {
         this.ctx.strokeRect(x, y, pageW, pageH);
 
         this.ctx.fillStyle = '#594a32';
-        this.ctx.font = 'bold 34px Georgia';
-        this.ctx.fillText('PROTECT MY RESUME', x + 26, y + 52);
+        this.ctx.font = 'bold 44px Georgia';
+        this.ctx.fillText('PROTECT MY RESUME', x + 26, y + 58);
 
-        this.ctx.font = 'bold 18px Georgia';
-        this.ctx.fillText('Summary', x + 26, y + 92);
-        this.ctx.fillText('Skills', x + 26, y + 220);
-        this.ctx.fillText('Experience', x + 26, y + 370);
+        if (this.resumeData && this.resumeData.personal) {
+            const p = this.resumeData.personal;
+            this.ctx.font = 'bold 22px Georgia';
+            this.ctx.fillStyle = '#574934';
+            this.ctx.fillText((p.name || '').toUpperCase(), x + 26, y + 96);
 
-        this.ctx.font = '15px Georgia';
-        this.ctx.fillStyle = '#6f5e44';
-        const lines = [
-            'Software developer focused on web, game logic, and cyber security learning.',
-            'Built interactive frontend projects with JavaScript and Canvas.',
-            'Strong in object-oriented thinking, debugging, and iterative problem solving.',
-            'Technologies: JavaScript, Python, Java, C++, SQL, HTML, CSS, Git.',
-            'Strengths: Algorithmic thinking, user-centric design, rapid prototyping.'
-        ];
-        for (let i = 0; i < lines.length; i++) {
-            this.ctx.fillText(lines[i], x + 26, y + 120 + i * 26);
-        }
+            this.ctx.font = 'italic 18px Georgia';
+            this.ctx.fillText(`${p.title || ''} | ${p.phone || ''} | ${p.email || ''}`, x + 26, y + 124);
 
-        this.ctx.strokeStyle = 'rgba(99, 80, 49, 0.22)';
-        this.ctx.lineWidth = 1;
-        for (let r = 0; r < 17; r++) {
-            const ry = y + 262 + r * 20;
-            this.ctx.beginPath();
-            this.ctx.moveTo(x + 24, ry);
-            this.ctx.lineTo(x + pageW - 24, ry);
-            this.ctx.stroke();
+            let cursorY = y + 160;
+            const textW = pageW - 52;
+
+            this.ctx.font = 'bold 20px Georgia';
+            this.ctx.fillStyle = '#4f3f2b';
+            this.ctx.fillText('SUMMARY', x + 26, cursorY);
+            cursorY += 24;
+
+            this.ctx.font = '16px Georgia';
+            this.ctx.fillStyle = '#66543d';
+            cursorY = this.drawWrappedText(this.resumeData.summary || '', x + 26, cursorY, textW, 22, 4);
+            cursorY += 10;
+
+            this.ctx.font = 'bold 20px Georgia';
+            this.ctx.fillStyle = '#4f3f2b';
+            this.ctx.fillText('TECHNICAL SKILLS', x + 26, cursorY);
+            cursorY += 24;
+
+            this.ctx.font = '16px Georgia';
+            this.ctx.fillStyle = '#66543d';
+            const skills = Array.isArray(this.resumeData.technicalSkills) ? this.resumeData.technicalSkills.slice(0, 4) : [];
+            for (const skill of skills) {
+                const line = `${skill.label}: ${(skill.items || []).join(', ')}`;
+                cursorY = this.drawWrappedText(line, x + 26, cursorY, textW, 20, 2);
+                cursorY += 2;
+            }
+            cursorY += 8;
+
+            this.ctx.font = 'bold 20px Georgia';
+            this.ctx.fillStyle = '#4f3f2b';
+            this.ctx.fillText('WORK EXPERIENCE', x + 26, cursorY);
+            cursorY += 24;
+
+            const jobs = Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience.slice(0, 2) : [];
+            for (const job of jobs) {
+                this.ctx.font = 'bold 16px Georgia';
+                this.ctx.fillStyle = '#5a4934';
+                this.ctx.fillText(`${job.title} (${job.dateRange})`, x + 26, cursorY);
+                cursorY += 20;
+
+                this.ctx.font = 'italic 15px Georgia';
+                this.ctx.fillText(job.company || '', x + 26, cursorY);
+                cursorY += 20;
+
+                this.ctx.font = '15px Georgia';
+                this.ctx.fillStyle = '#66543d';
+                const firstBullet = Array.isArray(job.highlights) && job.highlights.length ? `- ${job.highlights[0]}` : '';
+                cursorY = this.drawWrappedText(firstBullet, x + 26, cursorY, textW, 19, 2);
+                cursorY += 8;
+            }
+
+            this.ctx.font = 'bold 20px Georgia';
+            this.ctx.fillStyle = '#4f3f2b';
+            this.ctx.fillText('EDUCATION', x + 26, cursorY);
+            cursorY += 24;
+
+            this.ctx.font = '15px Georgia';
+            this.ctx.fillStyle = '#66543d';
+            const edu = Array.isArray(this.resumeData.education) ? this.resumeData.education.slice(0, 2) : [];
+            for (const item of edu) {
+                cursorY = this.drawWrappedText(`${item.degree} - ${item.dateRange}`, x + 26, cursorY, textW, 19, 2);
+                cursorY = this.drawWrappedText(item.institution || '', x + 26, cursorY, textW, 19, 2);
+                cursorY += 6;
+            }
+        } else {
+            this.ctx.font = '18px Georgia';
+            this.ctx.fillStyle = '#6f5e44';
+            this.ctx.fillText('Resume data unavailable in this session.', x + 26, y + 100);
+            if (this.resumeLoadError) {
+                this.ctx.font = '15px Georgia';
+                this.ctx.fillText('Tip: open index.html once or run with Live Server, then return to game.', x + 26, y + 130);
+            }
         }
 
         const healthGlow = Math.max(0, 1 - this.resumeHealth / 100);
@@ -444,7 +699,7 @@ class Game {
     drawCracks() {
         this.ctx.save();
         for (const crack of this.cracks) {
-            const alpha = Math.min(0.85, crack.life / 900);
+            const alpha = Math.min(0.85, crack.life / 240);
             this.ctx.strokeStyle = `rgba(210, 228, 255, ${alpha})`;
             this.ctx.lineWidth = 1.6;
             for (const branch of crack.branches) {
@@ -498,6 +753,7 @@ class Game {
         this.ctx.translate(-this.cameraX, -this.cameraY);
 
         this.drawResumeTerrain();
+        this.drawWorldNotes();
 
         for (const enemy of this.currentEnemies) {
             enemy.draw(this.ctx, performance.now());
@@ -540,6 +796,8 @@ class Game {
         this.projectiles = [];
         this.player.x = this.worldWidth * 0.5;
         this.player.y = this.worldHeight * 0.5;
+        this.player.setTarget(this.player.x, this.player.y);
+        this.centerCameraOnPlayer();
         this.spawnFloorEnemies();
     }
 
@@ -552,8 +810,5 @@ class Game {
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('gameCanvas');
-    const game = new Game(canvas);
-    document.getElementById('restartBtn').addEventListener('click', () => {
-        game.resetGame();
-    });
+    new Game(canvas);
 });

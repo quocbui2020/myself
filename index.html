@@ -3,440 +3,321 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quoc Bui - Portfolio</title>
+    <title>Quoc Ngoc Bui - Resume</title>
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            line-height: 1.6;
+            font-family: Georgia, 'Times New Roman', serif;
+            background: #ececec;
+            color: #111;
+            line-height: 1.28;
+            overflow-x: hidden;
+        }
+
+        .page-wrap {
             min-height: 100vh;
+            padding: 24px 14px;
         }
 
-        .container {
-            max-width: 1200px;
+        .resume-page {
+            width: min(860px, 100%);
             margin: 0 auto;
-            padding: 20px;
+            background: #fff;
+            border: 1px solid #c8c8c8;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            padding: 36px 44px 42px;
         }
 
-        /* Header & Navigation */
-        header {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        .top-actions {
+            width: min(860px, 100%);
+            margin: 0 auto 10px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .action-btn {
+            border: 1px solid #909090;
+            background: #fff;
+            color: #222;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            padding: 6px 10px;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .name {
+            text-align: center;
+            font-size: clamp(34px, 4.2vw, 46px);
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            word-break: break-word;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 38px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .contact {
+            text-align: center;
+            font-style: italic;
+            font-size: 20px;
+            margin-bottom: 22px;
+            overflow-wrap: anywhere;
+        }
+
+        .contact a {
+            color: #1d67b8;
+        }
+
+        .section {
+            margin-top: 14px;
+        }
+
+        .section-title {
+            font-size: 38px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .summary-text {
+            padding-left: 30px;
+            font-size: 35px;
+            overflow-wrap: anywhere;
+        }
+
+        .skill-row {
+            padding-left: 30px;
+            font-size: 35px;
+            margin-bottom: 3px;
+            overflow-wrap: anywhere;
+        }
+
+        .skill-label {
+            text-decoration: underline;
+            font-weight: 400;
+        }
+
+        .experience-item,
+        .education-item {
+            margin-top: 6px;
+            padding-left: 30px;
+        }
+
+        .item-head {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            gap: 16px;
+            align-items: baseline;
             flex-wrap: wrap;
-            gap: 20px;
+            font-size: 41px;
+            font-weight: 700;
         }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex: 1;
-            min-width: 300px;
+        .item-sub {
+            font-size: 40px;
+            margin-bottom: 2px;
         }
 
-        .profile-pic {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid #667eea;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        .bullets {
+            margin: 3px 0 0 28px;
+            padding-left: 24px;
         }
 
-        .header-info h1 {
-            font-size: 28px;
-            color: #667eea;
-            margin-bottom: 5px;
+        .bullets li {
+            font-size: 36px;
+            margin: 2px 0;
+            overflow-wrap: anywhere;
         }
 
-        .header-info p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .header-nav {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .nav-btn {
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .nav-btn:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .nav-btn.secondary {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-
-        .nav-btn.secondary:hover {
-            background: #f8f9ff;
-        }
-
-        /* Main Content */
-        .content-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .card h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #667eea;
-        }
-
-        .about-text {
-            color: #555;
-            font-size: 16px;
-            line-height: 1.8;
-        }
-
-        /* Skills */
-        .skills-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .skill-group {
-            background: #f8f9ff;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-
-        .skill-group h3 {
-            color: #667eea;
-            font-size: 14px;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .skill-item {
-            display: inline-block;
-            background: white;
-            padding: 6px 12px;
-            margin: 4px 4px 4px 0;
-            border-radius: 20px;
-            border: 1px solid #667eea;
-            color: #667eea;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        /* Experience & Projects */
-        .experience-item,
-        .project-item,
-        .education-item {
-            background: #f8f9ff;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-
-        .experience-item h3,
-        .project-item h3,
-        .education-item h3 {
-            color: #667eea;
-            margin-bottom: 5px;
-        }
-
-        .meta {
-            color: #999;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-
-        .description {
-            color: #666;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        /* Contact & Links */
-        .contact-info {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .contact-item strong {
-            color: #667eea;
-            min-width: 80px;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            header {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .header-left {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .header-info h1 {
-                font-size: 24px;
-            }
-
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .header-nav {
-                justify-content: center;
-                width: 100%;
-            }
-
-            .skills-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .card {
-                padding: 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 10px;
-            }
-
-            header {
-                padding: 15px;
-            }
-
-            .card {
-                padding: 15px;
-            }
-
-            .profile-pic {
-                width: 80px;
-                height: 80px;
-            }
-
-            .header-info h1 {
-                font-size: 20px;
-            }
-
-            .nav-btn {
-                padding: 8px 16px;
-                font-size: 12px;
-            }
-        }
-
-        /* Print Styles */
-        @media print {
-            body {
-                background: white;
-            }
-
-            .header-nav,
-            .nav-btn {
-                display: none;
-            }
-
-            .card {
-                page-break-inside: avoid;
-            }
-        }
-
-        .empty-state {
+        .loading,
+        .error {
             text-align: center;
-            color: #999;
-            padding: 20px;
-            font-style: italic;
+            font-size: 18px;
+            font-family: Arial, sans-serif;
+            margin: 20px 0;
+        }
+
+        .error {
+            color: #b73a3a;
+        }
+
+        @media (max-width: 980px) {
+            .resume-page {
+                padding: 26px 18px 28px;
+            }
+
+            .title {
+                font-size: 28px;
+            }
+
+            .contact {
+                font-size: 18px;
+            }
+
+            .section-title {
+                font-size: 28px;
+            }
+
+            .summary-text,
+            .skill-row,
+            .item-head,
+            .item-sub,
+            .bullets li {
+                font-size: 20px;
+                line-height: 1.34;
+            }
+
+            .experience-item,
+            .education-item,
+            .summary-text,
+            .skill-row {
+                padding-left: 8px;
+            }
+
+            .bullets {
+                margin-left: 10px;
+                padding-left: 18px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-left">
-                <img src="quoc.jpg" alt="Profile Picture" class="profile-pic" onerror="this.style.display='none'">
-                <div class="header-info">
-                    <h1 id="personName">Quoc Bui</h1>
-                    <p id="personTitle">Full Stack Developer</p>
-                </div>
-            </div>
-            <div class="header-nav">
-                <a href="game.html" class="nav-btn">Play Game</a>
-                <button class="nav-btn secondary" onclick="scrollToSection('resume')">Resume</button>
-                <button class="nav-btn secondary" onclick="scrollToSection('contact')">Contact</button>
-            </div>
-        </header>
-
-        <div class="content-grid">
-            <div class="card">
-                <h2>About Me</h2>
-                <p class="about-text" id="aboutText">Loading...</p>
-            </div>
-
-            <div class="card" id="contact">
-                <h2>Contact</h2>
-                <div class="contact-info">
-                    <div class="contact-item">
-                        <strong>Email:</strong>
-                        <span id="personEmail">-</span>
-                    </div>
-                    <div class="contact-item">
-                        <strong>Phone:</strong>
-                        <span id="personPhone">-</span>
-                    </div>
-                    <div class="contact-item">
-                        <strong>Location:</strong>
-                        <span id="personLocation">-</span>
-                    </div>
-                </div>
-            </div>
+    <div class="page-wrap">
+        <div class="top-actions">
+            <a class="action-btn" href="game.html">Play Resume Game</a>
         </div>
 
-        <div class="card">
-            <h2>Skills</h2>
-            <div class="skills-grid" id="skillsContainer">
-                <div class="empty-state">Loading skills...</div>
-            </div>
-        </div>
-
-        <div class="card" id="resume">
-            <h2>Experience</h2>
-            <div id="experienceContainer">
-                <div class="empty-state">Loading experience...</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Projects</h2>
-            <div id="projectsContainer">
-                <div class="empty-state">Loading projects...</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Education</h2>
-            <div id="educationContainer">
-                <div class="empty-state">Loading education...</div>
-            </div>
-        </div>
+        <main class="resume-page" id="resumeRoot">
+            <p class="loading">Loading resume...</p>
+        </main>
     </div>
 
     <script>
-        // Load resume data from JSON
-        async function loadResume() {
-            try {
-                const response = await fetch('resume.json');
-                const data = await response.json();
-                renderResume(data);
-            } catch (error) {
-                console.error('Error loading resume:', error);
-            }
+        function renderBulletList(items) {
+            if (!Array.isArray(items) || items.length === 0) return '';
+            return `<ul class="bullets">${items.map((line) => `<li>${line}</li>`).join('')}</ul>`;
         }
 
         function renderResume(data) {
-            // Personal info
-            document.getElementById('personName').textContent = data.personal.name;
-            document.getElementById('personTitle').textContent = data.personal.title;
-            document.getElementById('aboutText').textContent = data.personal.about;
-            document.getElementById('personEmail').textContent = data.personal.email;
-            document.getElementById('personPhone').textContent = data.personal.phone;
-            document.getElementById('personLocation').textContent = data.personal.location;
+            const root = document.getElementById('resumeRoot');
 
-            // Skills
-            const skillsContainer = document.getElementById('skillsContainer');
-            skillsContainer.innerHTML = data.skills.map(skillGroup => `
-                <div class="skill-group">
-                    <h3>${skillGroup.category}</h3>
-                    ${skillGroup.items.map(item => `<div class="skill-item">${item}</div>`).join('')}
-                </div>
-            `).join('');
+            const skills = Array.isArray(data.technicalSkills) ? data.technicalSkills : [];
+            const work = Array.isArray(data.workExperience) ? data.workExperience : [];
+            const education = Array.isArray(data.education) ? data.education : [];
 
-            // Experience
-            const experienceContainer = document.getElementById('experienceContainer');
-            experienceContainer.innerHTML = data.experience.map(exp => `
-                <div class="experience-item">
-                    <h3>${exp.title}</h3>
-                    <div class="meta">${exp.company} • ${exp.duration}</div>
-                    <div class="description">${exp.description}</div>
-                </div>
-            `).join('') || '<div class="empty-state">No experience listed</div>';
+            root.innerHTML = `
+                <h1 class="name">${data.personal?.name || ''}</h1>
+                <p class="title">${data.personal?.title || ''}</p>
+                <p class="contact">
+                    phone: ${data.personal?.phone || ''}
+                    ||
+                    <a href="mailto:${data.personal?.email || ''}">${data.personal?.email || ''}</a>
+                </p>
 
-            // Projects
-            const projectsContainer = document.getElementById('projectsContainer');
-            projectsContainer.innerHTML = data.projects.map(proj => `
-                <div class="project-item">
-                    <h3>${proj.name}</h3>
-                    <div class="description">${proj.description}</div>
-                </div>
-            `).join('') || '<div class="empty-state">No projects listed</div>';
+                <section class="section">
+                    <h2 class="section-title">Summary</h2>
+                    <p class="summary-text">${data.summary || ''}</p>
+                </section>
 
-            // Education
-            const educationContainer = document.getElementById('educationContainer');
-            educationContainer.innerHTML = data.education.map(edu => `
-                <div class="education-item">
-                    <h3>${edu.degree}</h3>
-                    <div class="meta">${edu.school} • ${edu.year}</div>
-                    <div class="description">${edu.field}</div>
-                </div>
-            `).join('') || '<div class="empty-state">No education listed</div>';
+                <section class="section">
+                    <h2 class="section-title">Technical Skills</h2>
+                    ${skills.map((row) => `
+                        <p class="skill-row"><span class="skill-label">${row.label}:</span> ${Array.isArray(row.items) ? row.items.join(', ') : ''}.</p>
+                    `).join('')}
+                </section>
+
+                <section class="section">
+                    <h2 class="section-title">Work Experiences</h2>
+                    ${work.map((job) => `
+                        <article class="experience-item">
+                            <div class="item-head">
+                                <span>${job.title || ''}</span>
+                                <span>${job.dateRange || ''}</span>
+                            </div>
+                            <div class="item-sub">${job.company || ''}</div>
+                            ${renderBulletList(job.highlights)}
+                        </article>
+                    `).join('')}
+                </section>
+
+                <section class="section">
+                    <h2 class="section-title">Education</h2>
+                    ${education.map((item) => `
+                        <article class="education-item">
+                            <div class="item-head">
+                                <span>${item.degree || ''}</span>
+                                <span>${item.dateRange || ''}</span>
+                            </div>
+                            <div class="item-sub">${item.institution || ''}</div>
+                            ${renderBulletList(item.highlights)}
+                        </article>
+                    `).join('')}
+                </section>
+            `;
         }
 
-        function scrollToSection(sectionId) {
-            const element = document.getElementById(sectionId);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
+        function getCachedResumeData() {
+            try {
+                const raw = localStorage.getItem('resumeDataCache');
+                return raw ? JSON.parse(raw) : null;
+            } catch (_) {
+                return null;
             }
         }
 
-        // Load resume when page loads
+        async function loadResume() {
+            const root = document.getElementById('resumeRoot');
+            try {
+                const response = await fetch('resume.json');
+                if (!response.ok) {
+                    throw new Error(`Failed to load resume.json (${response.status})`);
+                }
+
+                // Parse manually so we can show precise JSON-format errors.
+                const raw = await response.text();
+                let data = null;
+                try {
+                    data = JSON.parse(raw);
+                } catch (jsonError) {
+                    throw new Error(`Invalid JSON format in resume.json: ${jsonError.message}`);
+                }
+
+                try {
+                    localStorage.setItem('resumeDataCache', JSON.stringify(data));
+                } catch (_) {
+                    // Ignore storage failures (private mode / storage disabled).
+                }
+
+                renderResume(data);
+                return;
+            } catch (error) {
+                const cached = getCachedResumeData();
+                if (cached) {
+                    renderResume(cached);
+                    return;
+                }
+
+                root.innerHTML = `
+                    <p class="error">Unable to load resume.json in this browser session.</p>
+                    <p class="error">If you opened this page directly via file://, please run with Live Server (or any local server) and refresh.</p>
+                `;
+                console.error(error);
+            }
+        }
+
         loadResume();
     </script>
 </body>
