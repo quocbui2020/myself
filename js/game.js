@@ -13,8 +13,9 @@ class Game {
         this.cameraDeadzoneY = 0;
 
         // Keep world dimensions fixed regardless of browser zoom or viewport size.
-        this.fixedWorldWidth = 2200;
-        this.fixedWorldHeight = 1400;
+        this.fixedWorldWidth = 1700;
+        this.fixedWorldHeight = 1900;
+        this.preStartWheelOffsetY = 0;
 
         this.currentFloor = 1;
         this.currentEnemies = [];
@@ -36,15 +37,17 @@ class Game {
         this.resumeHealth = 100;
         this.resumeRect = { x: 0, y: 0, width: 0, height: 0 };
         this.showResumeNote = false;
+        this.gameStarted = false;
+        this.acceptButtonRect = null;
         this.resumeData = this.getEmbeddedResumeData() || this.getCachedResumeData();
         this.resumeLoadError = false;
         this.hudState = {
             floorLevel: '1',
-            caughtCount: '0 / 2',
+            caughtCount: '--',
             progressPct: 0,
             resumeHpText: '100%',
             resumeHpPct: 100,
-            status: 'Resume Eating Bugs try to eat when you are far.'
+            status: 'Review the resume first, then accept the quest on the yellow note.'
         };
 
         this.deskImage = new Image();
@@ -62,8 +65,8 @@ class Game {
         this.player.setTarget(this.worldWidth * 0.5, this.worldHeight * 0.5);
         this.centerCameraOnPlayer();
 
-        this.spawnFloorEnemies();
         this.bindEvents();
+        this.applyGameStartedVisualState();
         this.updateHud();
         this.gameLoop();
     }
@@ -82,9 +85,25 @@ class Game {
 
         this.canvas.addEventListener('mousedown', (event) => {
             if (event.button === 0) {
-                this.swingHammer(event);
+                const pos = this.getMousePosition(event);
+                const worldPos = this.screenToWorld(pos.x, pos.y);
+
+                if (!this.gameStarted && this.acceptButtonRect && this.isPointInRect(worldPos, this.acceptButtonRect)) {
+                    this.startGame();
+                    return;
+                }
+
+                if (this.gameStarted) {
+                    this.swingHammer(event);
+                }
             }
         });
+
+        this.canvas.addEventListener('wheel', (event) => {
+            if (this.gameStarted) return;
+            event.preventDefault();
+            this.preStartWheelOffsetY += event.deltaY;
+        }, { passive: false });
 
         window.addEventListener('keydown', (event) => {
             const key = event.key.toLowerCase();
@@ -149,8 +168,27 @@ class Game {
 
     updateAimRing() {
         const ring = document.getElementById('aimRing');
+        if (!ring) return;
+
+        if (!this.gameStarted) {
+            ring.style.display = 'none';
+            return;
+        }
+
+        ring.style.display = 'block';
         ring.style.left = `${this.mouseX}px`;
         ring.style.top = `${this.mouseY}px`;
+    }
+
+    applyGameStartedVisualState() {
+        const ring = document.getElementById('aimRing');
+        if (this.gameStarted) {
+            this.canvas.style.cursor = 'none';
+            if (ring) ring.style.display = 'block';
+        } else {
+            this.canvas.style.cursor = 'default';
+            if (ring) ring.style.display = 'none';
+        }
     }
 
     resizeCanvas() {
@@ -215,6 +253,13 @@ class Game {
 
         this.cameraX = Math.max(0, Math.min(this.cameraX, this.worldWidth - this.width));
         this.cameraY = Math.max(0, Math.min(this.cameraY, this.worldHeight - this.height));
+
+        if (!this.gameStarted && this.worldHeight > this.height) {
+            const minOffsetY = -this.cameraY;
+            const maxOffsetY = this.worldHeight - this.height - this.cameraY;
+            this.preStartWheelOffsetY = Math.max(minOffsetY, Math.min(this.preStartWheelOffsetY, maxOffsetY));
+            this.cameraY += this.preStartWheelOffsetY;
+        }
     }
 
     centerCameraOnPlayer() {
@@ -403,7 +448,17 @@ class Game {
     update() {
         const now = performance.now();
 
+        // Keep camera navigation responsive before quest acceptance by letting
+        // the hidden player continue following the cursor target.
         this.player.update(this.worldWidth, this.worldHeight);
+
+        if (!this.gameStarted) {
+            this.particles.update();
+            this.updateCamera();
+            this.updateHud();
+            return;
+        }
+
         this.updateProjectiles(now);
 
         let dpsFromEnemies = 0;
@@ -444,6 +499,29 @@ class Game {
     }
 
     updateHud() {
+        if (!this.gameStarted) {
+            this.hudState.floorLevel = '1';
+            this.hudState.caughtCount = '--';
+            this.hudState.progressPct = 0;
+            this.hudState.resumeHpText = `${Math.round(this.resumeHealth)}%`;
+            this.hudState.resumeHpPct = Math.max(0, this.resumeHealth);
+            this.hudState.status = 'Read the resume, then click "Yes, I will protect your resume".';
+
+            const floorLevelEl = document.getElementById('floorLevel');
+            if (floorLevelEl) floorLevelEl.textContent = this.hudState.floorLevel;
+            const caughtCountEl = document.getElementById('caughtCount');
+            if (caughtCountEl) caughtCountEl.textContent = this.hudState.caughtCount;
+            const progressBarEl = document.getElementById('progressBar');
+            if (progressBarEl) progressBarEl.style.width = `${this.hudState.progressPct}%`;
+            const resumeHpTextEl = document.getElementById('resumeHpText');
+            if (resumeHpTextEl) resumeHpTextEl.textContent = this.hudState.resumeHpText;
+            const resumeHpBarEl = document.getElementById('resumeHpBar');
+            if (resumeHpBarEl) resumeHpBarEl.style.width = `${this.hudState.resumeHpPct}%`;
+            const statusEl = document.getElementById('statusText');
+            if (statusEl) statusEl.textContent = this.hudState.status;
+            return;
+        }
+
         const total = this.getEnemyCountForFloor(this.currentFloor);
         const progressPct = (this.defeatedThisFloor / total) * 100;
 
@@ -544,34 +622,66 @@ class Game {
     drawWorldNotes() {
         const leftX = this.resumeRect.x - 290;
         const topY = this.resumeRect.y + 80;
+        const noteCenterX = leftX + 130;
 
         this.drawStickyNote(leftX, topY, 260, 180, '#fff2a8', -0.05);
         this.ctx.fillStyle = '#4b3a20';
-        this.ctx.font = 'bold 18px Comic Sans MS';
-        this.ctx.fillText('Protect My Resume', leftX + 18, topY + 32);
-        this.ctx.font = '14px Comic Sans MS';
-        this.ctx.fillText(`Floor: ${this.hudState.floorLevel}`, leftX + 18, topY + 58);
-        this.ctx.fillText(`Bugs: ${this.hudState.caughtCount}`, leftX + 18, topY + 80);
-        this.ctx.fillText(`HP: ${this.hudState.resumeHpText}`, leftX + 18, topY + 102);
+        if (!this.gameStarted) {
+            this.ctx.font = 'bold 16px Comic Sans MS';
+            this.ctx.fillText('A Request From Your Resume', leftX + 14, topY + 30);
+            this.ctx.font = '12px Comic Sans MS';
+            const questText = 'I need a brave knight like you to protect my resume from evil resume-eating bugs. My career prospects depend on this. Will you accept the task?';
+            let questY = topY + 50;
+            const questLines = this.getWrappedLines(questText, 232);
+            for (let i = 0; i < questLines.length && i < 6; i++) {
+                this.ctx.fillText(questLines[i], leftX + 14, questY);
+                questY += 17;
+            }
 
-        this.ctx.fillStyle = '#efe1a0';
-        this.ctx.fillRect(leftX + 18, topY + 118, 220, 9);
-        this.ctx.fillStyle = '#f08b4f';
-        this.ctx.fillRect(leftX + 18, topY + 118, 220 * (this.hudState.progressPct / 100), 9);
+            const buttonW = 224;
+            const buttonH = 28;
+            const buttonX = noteCenterX - buttonW / 2;
+            const buttonY = topY + 146;
+            this.acceptButtonRect = { x: buttonX, y: buttonY, width: buttonW, height: buttonH };
 
-        this.ctx.fillStyle = '#e6d78f';
-        this.ctx.fillRect(leftX + 18, topY + 136, 220, 9);
-        this.ctx.fillStyle = '#63c57a';
-        this.ctx.fillRect(leftX + 18, topY + 136, 220 * (this.hudState.resumeHpPct / 100), 9);
+            this.ctx.fillStyle = '#ffe07a';
+            this.ctx.fillRect(buttonX, buttonY, buttonW, buttonH);
+            this.ctx.strokeStyle = '#8c6b1a';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(buttonX, buttonY, buttonW, buttonH);
+            this.ctx.fillStyle = '#4b3a20';
+            this.ctx.font = 'bold 12px Comic Sans MS';
+            this.ctx.fillText('Yes, I will protect your resume', buttonX + 25, buttonY + 18);
+        } else {
+            this.acceptButtonRect = null;
+            this.ctx.font = 'bold 18px Comic Sans MS';
+            this.ctx.fillText('Protect My Resume', leftX + 18, topY + 32);
+            this.ctx.font = '14px Comic Sans MS';
+            this.ctx.fillText(`Floor: ${this.hudState.floorLevel}`, leftX + 18, topY + 58);
+            this.ctx.fillText(`Bugs: ${this.hudState.caughtCount}`, leftX + 18, topY + 80);
+            this.ctx.fillText(`HP: ${this.hudState.resumeHpText}`, leftX + 18, topY + 102);
 
-        this.drawStickyNote(this.resumeRect.x + this.resumeRect.width + 34, this.resumeRect.y + 90, 240, 150, '#d8f0ff', 0.06);
-        this.ctx.fillStyle = '#2f3e49';
-        this.ctx.font = 'bold 16px Comic Sans MS';
-        this.ctx.fillText('Instructions', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 120);
-        this.ctx.font = '13px Comic Sans MS';
-        this.ctx.fillText('Move: Follow cursor', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 146);
-        this.ctx.fillText('Left Click: Hammer', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 166);
-        this.ctx.fillText('Hotkeys: R reset, B back, P note', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
+            this.ctx.fillStyle = '#efe1a0';
+            this.ctx.fillRect(leftX + 18, topY + 118, 220, 9);
+            this.ctx.fillStyle = '#f08b4f';
+            this.ctx.fillRect(leftX + 18, topY + 118, 220 * (this.hudState.progressPct / 100), 9);
+
+            this.ctx.fillStyle = '#e6d78f';
+            this.ctx.fillRect(leftX + 18, topY + 136, 220, 9);
+            this.ctx.fillStyle = '#63c57a';
+            this.ctx.fillRect(leftX + 18, topY + 136, 220 * (this.hudState.resumeHpPct / 100), 9);
+        }
+
+        if (this.gameStarted) {
+            this.drawStickyNote(this.resumeRect.x + this.resumeRect.width + 34, this.resumeRect.y + 90, 240, 150, '#d8f0ff', 0.06);
+            this.ctx.fillStyle = '#2f3e49';
+            this.ctx.font = 'bold 16px Comic Sans MS';
+            this.ctx.fillText('Instructions', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 120);
+            this.ctx.font = '13px Comic Sans MS';
+            this.ctx.fillText('Move: Follow cursor', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 146);
+            this.ctx.fillText('Left Click: Hammer', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 166);
+            this.ctx.fillText('Hotkeys: R reset, B back, P note', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
+        }
 
         if (this.showResumeNote) {
             const noteX = this.resumeRect.x + 60;
@@ -819,7 +929,9 @@ class Game {
         }
 
         this.drawProjectiles();
-        this.player.draw(this.ctx);
+        if (this.gameStarted) {
+            this.player.draw(this.ctx);
+        }
         this.particles.draw(this.ctx);
         this.drawCracks();
         this.drawTornPapers();
@@ -857,7 +969,38 @@ class Game {
         this.player.y = this.worldHeight * 0.5;
         this.player.setTarget(this.player.x, this.player.y);
         this.centerCameraOnPlayer();
+
+        if (this.gameStarted) {
+            this.spawnFloorEnemies();
+        } else {
+            this.currentEnemies = [];
+            this.floorTransitionTicks = 0;
+        }
+    }
+
+    startGame() {
+        if (this.gameStarted) return;
+        this.gameStarted = true;
+        this.preStartWheelOffsetY = 0;
+        this.applyGameStartedVisualState();
+        this.resumeHealth = 100;
+        this.currentFloor = 1;
+        this.defeatedThisFloor = 0;
+        this.totalDefeated = 0;
+        this.floorTransitionTicks = 0;
+        this.cracks = [];
+        this.torePapers = [];
+        this.projectiles = [];
         this.spawnFloorEnemies();
+    }
+
+    isPointInRect(point, rect) {
+        return (
+            point.x >= rect.x &&
+            point.x <= rect.x + rect.width &&
+            point.y >= rect.y &&
+            point.y <= rect.y + rect.height
+        );
     }
 
     distance(x1, y1, x2, y2) {
