@@ -62,6 +62,17 @@ class Game {
             }
         };
 
+        this.gameplaySettings = {
+            playerSize: 64,
+            playerSpeed: 20,
+            bugSize: 50,
+            bugBossSize: 74,
+            bugSpeed: 2.7,
+            bugBossSpeed: 4.05,
+            bugHealth: 3,
+            bugBossHealth: 10
+        };
+
         // Keep world dimensions fixed regardless of browser zoom or viewport size.
         this.fixedWorldWidth = this.layoutConfig.world.width;
         this.fixedWorldHeight = this.layoutConfig.world.height;
@@ -87,17 +98,19 @@ class Game {
         this.hammerDamage = 1;
         this.stunMs = 2200;
         this.resumeHealth = 100;
-        this.maxMana = 100;
-        this.mana = 0;
+        this.maxPower = 100;
+        this.power = 0;
         this.shockwaveChargeMs = 3000;
         this.shockwaveDelayMs = 500;
         this.isChargingShockwave = false;
         this.isHolding = false;
         this.holdStartTime = 0;
         this.shockwaveRings = [];
+        this.ropePullAnim = null;
+        this.skillAnimation = 'shockwave';
         this.adminPanelOpen = false;
         this.adminOneHitKill = false;
-        this.adminInfiniteMana = false;
+        this.adminInfinitePower = false;
         this.adminPanelEl = null;
         this.resumeRect = { x: 0, y: 0, width: 0, height: 0 };
         this.gameStarted = false;
@@ -111,8 +124,8 @@ class Game {
             floorLevel: '1',
             caughtCount: '--',
             progressPct: 0,
-            manaText: '0%',
-            manaPct: 0,
+            powerText: '0%',
+            powerPct: 0,
             status: 'Review the resume first, then click or tap the yellow button to accept the quest.'
         };
 
@@ -138,7 +151,10 @@ class Game {
         this.particles = new ParticleSystem();
 
         this.resizeCanvas();
-        this.player = new Player(this.worldWidth * 0.5, this.worldHeight * 0.5);
+        this.player = new Player(this.worldWidth * 0.5, this.worldHeight * 0.5, {
+            size: this.gameplaySettings.playerSize,
+            speed: this.gameplaySettings.playerSpeed
+        });
         this.player.setTarget(this.worldWidth * 0.5, this.worldHeight * 0.5);
         this.centerCameraOnPlayer();
 
@@ -400,39 +416,120 @@ class Game {
             'One Hit Kill',
             '</label>',
             '<label style="display:flex; align-items:center; gap:8px; margin:8px 0; font-size:13px;">',
-            '<input id="adminInfiniteManaToggle" type="checkbox" />',
-            'Infinite Mama',
+            '<input id="adminInfinitePowerToggle" type="checkbox" />',
+            'Infinite Power',
             '</label>',
-            '<div style="font-size:11px; color:#4b5563; margin-top:8px;">Hotkey: Ctrl+Shift+Z</div>'
+            '<div style="margin:8px 0;">',
+            '<div style="font-size:12px; font-weight:600; margin-bottom:4px;">Skill Animation</div>',
+            '<select id="adminSkillAnimSelect" style="width:100%; font-size:12px; padding:3px 4px; border-radius:4px; border:1px solid #9ca3af;">',
+            '<option value="shockwave">Shockwave</option>',
+            '<option value="ropepull">Rope Pull</option>',
+            '</select>',
+            '</div>',
+            '<div style="margin:8px 0;">',
+            '<div style="font-size:12px; font-weight:600; margin-bottom:4px;">Jump to Floor</div>',
+            '<div style="display:flex; gap:6px; align-items:center;">',
+            '<input id="adminFloorInput" type="number" min="1" value="1" style="width:60px; font-size:12px; padding:3px 6px; border-radius:4px; border:1px solid #9ca3af;" />',
+            '<button id="adminFloorJump" style="font-size:12px; padding:3px 8px; border-radius:4px; border:none; background:#3b82f6; color:#fff; cursor:pointer;">Go</button>',
+            '</div>',
+            '</div>',
+            '<div style="font-size:11px; color:#4b5563; margin-top:8px;">Hotkey: Ctrl+Shift+Z</div>',
+            '<div style="margin:8px 0;">',
+            '<div style="font-size:12px; font-weight:600; margin-bottom:4px;">Spawn Enemy</div>',
+            '<div style="display:flex; gap:6px;">',
+            '<button id="adminSpawnBug" style="flex:1; font-size:12px; padding:4px 0; border-radius:4px; border:none; background:#16a34a; color:#fff; cursor:pointer;">+ Bug</button>',
+            '<button id="adminSpawnBoss" style="flex:1; font-size:12px; padding:4px 0; border-radius:4px; border:none; background:#b91c1c; color:#fff; cursor:pointer;">+ Boss</button>',
+            '</div>',
+            '</div>'
         ].join('');
 
         document.body.appendChild(panel);
         this.adminPanelEl = panel;
 
         const oneHitToggle = panel.querySelector('#adminOneHitKillToggle');
-        const infiniteManaToggle = panel.querySelector('#adminInfiniteManaToggle');
+        const infinitePowerToggle = panel.querySelector('#adminInfinitePowerToggle');
+        const skillAnimSelect = panel.querySelector('#adminSkillAnimSelect');
+        const floorInput = panel.querySelector('#adminFloorInput');
+        const floorJumpBtn = panel.querySelector('#adminFloorJump');
+        const spawnBugBtn = panel.querySelector('#adminSpawnBug');
+        const spawnBossBtn = panel.querySelector('#adminSpawnBoss');
+
         if (oneHitToggle) {
             oneHitToggle.checked = this.adminOneHitKill;
             oneHitToggle.addEventListener('change', (event) => {
                 this.adminOneHitKill = !!event.target.checked;
             });
         }
-        if (infiniteManaToggle) {
-            infiniteManaToggle.checked = this.adminInfiniteMana;
-            infiniteManaToggle.addEventListener('change', (event) => {
-                this.adminInfiniteMana = !!event.target.checked;
-                if (this.adminInfiniteMana) {
-                    this.mana = this.maxMana;
+        if (infinitePowerToggle) {
+            infinitePowerToggle.checked = this.adminInfinitePower;
+            infinitePowerToggle.addEventListener('change', (event) => {
+                this.adminInfinitePower = !!event.target.checked;
+                if (this.adminInfinitePower) {
+                    this.power = this.maxPower;
                     this.updateHud();
                 }
             });
         }
+        if (skillAnimSelect) {
+            skillAnimSelect.value = this.skillAnimation;
+            skillAnimSelect.addEventListener('change', (event) => {
+                const val = event.target.value;
+                if (val === 'shockwave' || val === 'ropepull') {
+                    this.skillAnimation = val;
+                }
+            });
+        }
+        if (floorJumpBtn) {
+            floorJumpBtn.addEventListener('click', () => {
+                if (!this.gameStarted) return;
+                const raw = parseInt(floorInput ? floorInput.value : '1', 10);
+                const target = Number.isFinite(raw) && raw > 0 ? raw : 1;
+                this.currentFloor = target;
+                this.defeatedThisFloor = 0;
+                this.floorTransitionTicks = 0;
+                this.ropePullAnim = null;
+                this.shockwaveRings = [];
+                this.currentEnemies = [];
+                this.spawnFloorEnemies();
+                this.updateHud();
+            });
+        }
+
+        const spawnOne = (isBoss) => {
+            if (!this.gameStarted) return;
+            const tier = this.getUpgradeTier(this.currentFloor);
+            let x = 0, y = 0, attempts = 0;
+            do {
+                x = Math.random() * (this.worldWidth - 120) + 60;
+                y = Math.random() * (this.worldHeight - 120) + 60;
+                attempts++;
+            } while (this.distance(x, y, this.player.x, this.player.y) < 180 && attempts < 25);
+            this.currentEnemies.push(new Enemy(x, y, {
+                isBoss,
+                upgradeTier: tier,
+                bugSize: this.gameplaySettings.bugSize,
+                bugBossSize: this.gameplaySettings.bugBossSize,
+                bugSpeed: this.gameplaySettings.bugSpeed,
+                bugBossSpeed: this.gameplaySettings.bugBossSpeed,
+                bugHealth: this.gameplaySettings.bugHealth,
+                bugBossHealth: this.gameplaySettings.bugBossHealth
+            }));
+            this.updateHud();
+        };
+        if (spawnBugBtn) spawnBugBtn.addEventListener('click', () => spawnOne(false));
+        if (spawnBossBtn) spawnBossBtn.addEventListener('click', () => spawnOne(true));
     }
 
     toggleAdminPanel() {
         this.adminPanelOpen = !this.adminPanelOpen;
         if (this.adminPanelEl) {
             this.adminPanelEl.style.display = this.adminPanelOpen ? 'block' : 'none';
+            if (this.adminPanelOpen) {
+                const sel = this.adminPanelEl.querySelector('#adminSkillAnimSelect');
+                if (sel) sel.value = this.skillAnimation;
+                const floorInput = this.adminPanelEl.querySelector('#adminFloorInput');
+                if (floorInput) floorInput.value = String(this.currentFloor);
+            }
         }
     }
 
@@ -447,6 +544,7 @@ class Game {
             this.resumeDataSource = 'game_resume.json';
             this.applyResumeLayoutOverrides();
             this.applyResumeTypographyOverrides();
+            this.applyGameplaySettingsOverrides();
             this.resumeLoadError = false;
             this.resumeLoadErrorMessage = '';
         } catch (error) {
@@ -510,6 +608,41 @@ class Game {
         };
 
         mergeTypography(this.resumeTypography, typography);
+    }
+
+    applyGameplaySettingsOverrides() {
+        const source = this.resumeData && this.resumeData.gameplaySettings ? this.resumeData.gameplaySettings : null;
+        if (!source || typeof source !== 'object') return;
+
+        const keys = [
+            'playerSize',
+            'playerSpeed',
+            'bugSize',
+            'bugBossSize',
+            'bugSpeed',
+            'bugBossSpeed',
+            'bugHealth',
+            'bugBossHealth'
+        ];
+
+        for (const key of keys) {
+            const value = Number(source[key]);
+            if (Number.isFinite(value) && value > 0) {
+                this.gameplaySettings[key] = value;
+            }
+        }
+
+        if (this.player) {
+            this.player.width = this.gameplaySettings.playerSize;
+            this.player.height = Math.max(44, this.gameplaySettings.playerSize * 0.9);
+            this.player.speed = this.gameplaySettings.playerSpeed;
+            this.player.x = Math.max(0, Math.min(this.player.x, this.worldWidth - this.player.width));
+            this.player.y = Math.max(0, Math.min(this.player.y, this.worldHeight - this.player.height));
+        }
+
+        if (source.defaultSkillAnimation === 'shockwave' || source.defaultSkillAnimation === 'ropepull') {
+            this.skillAnimation = source.defaultSkillAnimation;
+        }
     }
 
     getMousePosition(event) {
@@ -727,7 +860,16 @@ class Game {
                 attempts++;
             } while (this.distance(x, y, this.player.x, this.player.y) < 180 && attempts < 25);
 
-            this.currentEnemies.push(new Enemy(x, y, { isBoss, upgradeTier: tier }));
+            this.currentEnemies.push(new Enemy(x, y, {
+                isBoss,
+                upgradeTier: tier,
+                bugSize: this.gameplaySettings.bugSize,
+                bugBossSize: this.gameplaySettings.bugBossSize,
+                bugSpeed: this.gameplaySettings.bugSpeed,
+                bugBossSpeed: this.gameplaySettings.bugBossSpeed,
+                bugHealth: this.gameplaySettings.bugHealth,
+                bugBossHealth: this.gameplaySettings.bugBossHealth
+            }));
         }
     }
 
@@ -834,8 +976,8 @@ class Game {
     registerEnemyDefeat(enemy) {
         this.defeatedThisFloor++;
         this.totalDefeated++;
-        const manaGain = enemy && enemy.isBoss ? 10 : 5;
-        this.mana = Math.min(this.maxMana, this.mana + manaGain);
+        const powerGain = enemy && enemy.isBoss ? 10 : 5;
+        this.power = Math.min(this.maxPower, this.power + powerGain);
     }
 
     onInputRelease(event) {
@@ -850,8 +992,8 @@ class Game {
         this.isChargingShockwave = false;
 
         const fullChargeTime = this.shockwaveDelayMs + this.shockwaveChargeMs;
-        if (this.mana >= this.maxMana && elapsed >= fullChargeTime) {
-            this.fireShockwave();
+        if (this.power >= this.maxPower && elapsed >= fullChargeTime) {
+            this.fireSkill();
         } else if (event) {
             this.swingHammer(event);
         } else {
@@ -861,11 +1003,11 @@ class Game {
     }
 
     fireShockwave() {
-        if (this.mana < this.maxMana) return;
-        if (!this.adminInfiniteMana) {
-            this.mana = 0;
+        if (this.power < this.maxPower) return;
+        if (!this.adminInfinitePower) {
+            this.power = 0;
         } else {
-            this.mana = this.maxMana;
+            this.power = this.maxPower;
         }
         const center = this.player.getCenter();
         const maxRadius = Math.sqrt(this.worldWidth * this.worldWidth + this.worldHeight * this.worldHeight);
@@ -932,7 +1074,7 @@ class Game {
     }
 
     drawShockwaveChargeBar(now) {
-        if (!this.isHolding || !this.gameStarted || this.mana < this.maxMana) return;
+        if (!this.isHolding || !this.gameStarted || this.power < this.maxPower) return;
         const holdElapsed = now - this.holdStartTime;
         if (holdElapsed < this.shockwaveDelayMs) return;
         const chargeProgress = Math.min(1, (holdElapsed - this.shockwaveDelayMs) / this.shockwaveChargeMs);
@@ -956,6 +1098,161 @@ class Game {
         this.ctx.textAlign = 'center';
         this.ctx.fillText(label, center.x, barY - 3);
         this.ctx.textAlign = 'left';
+    }
+
+    fireSkill() {
+        if (this.skillAnimation === 'ropepull') {
+            this.fireRopePull();
+        } else {
+            this.fireShockwave();
+        }
+    }
+
+    fireRopePull() {
+        if (this.power < this.maxPower) return;
+        if (!this.adminInfinitePower) {
+            this.power = 0;
+        } else {
+            this.power = this.maxPower;
+        }
+        const count = this.currentEnemies.length;
+        const playerRadius = this.player.width * 0.5;
+        const bugs = this.currentEnemies.map((e, i) => {
+            // Space bugs evenly in a ring whose radius prevents overlap with player and each other.
+            const ringRadius = Math.max(
+                playerRadius + e.width * 0.5 + 10,
+                (e.width * 0.75 * count) / (2 * Math.PI)
+            );
+            const angle = (2 * Math.PI * i) / Math.max(1, count);
+            return { enemy: e, startX: e.x, startY: e.y, ringRadius, angle };
+        });
+        this.ropePullAnim = {
+            phase: 'pull',
+            startTime: performance.now(),
+            bugs,
+            pullDuration: 700,
+            jumpDuration: 350,
+            slamDuration: 500
+        };
+    }
+
+    updateRopePull() {
+        if (!this.ropePullAnim) return;
+        const now = performance.now();
+        const anim = this.ropePullAnim;
+        const elapsed = now - anim.startTime;
+        const center = this.player.getCenter();
+
+        if (anim.phase === 'pull') {
+            const t = Math.min(1, elapsed / anim.pullDuration);
+            const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+            for (const b of anim.bugs) {
+                if (!b.enemy) continue;
+                // Recompute target each frame from current player center so ring follows player.
+                const targetX = center.x + Math.cos(b.angle) * b.ringRadius - b.enemy.width * 0.5;
+                const targetY = center.y + Math.sin(b.angle) * b.ringRadius - b.enemy.height * 0.5;
+                b.enemy.x = b.startX + (targetX - b.startX) * eased;
+                b.enemy.y = b.startY + (targetY - b.startY) * eased;
+            }
+            if (elapsed >= anim.pullDuration) {
+                anim.phase = 'jump';
+                anim.startTime = now;
+            }
+        } else if (anim.phase === 'jump') {
+            if (elapsed >= anim.jumpDuration) {
+                this.executeSlamKill();
+                anim.phase = 'slam';
+                anim.startTime = now;
+            }
+        } else if (anim.phase === 'slam') {
+            if (elapsed >= anim.slamDuration) {
+                this.ropePullAnim = null;
+            }
+        }
+    }
+
+    executeSlamKill() {
+        const center = this.player.getCenter();
+        for (let i = 0; i < 4; i++) {
+            this.addCrack(
+                center.x + (Math.random() - 0.5) * 60,
+                center.y + (Math.random() - 0.5) * 60
+            );
+        }
+        const killed = [...this.currentEnemies];
+        this.currentEnemies = [];
+        for (const enemy of killed) {
+            this.registerEnemyDefeat(enemy);
+            const ec = enemy.getCenter();
+            this.particles.createCatch(ec.x, ec.y);
+            this.particles.createExplosion(ec.x, ec.y, 10, '#ffe08a');
+        }
+        const maxRadius = 360;
+        this.shockwaveRings.push({
+            x: center.x,
+            y: center.y,
+            radius: 10,
+            speed: 22,
+            maxRadius,
+            hitEnemies: new Set()
+        });
+        this.particles.createExplosion(center.x, center.y, 48, '#ffe08a');
+        this.player.triggerHammer();
+    }
+
+    getRopePullPlayerYOffset() {
+        if (!this.ropePullAnim) return 0;
+        const anim = this.ropePullAnim;
+        const elapsed = performance.now() - anim.startTime;
+        if (anim.phase === 'jump') {
+            const t = Math.min(1, elapsed / anim.jumpDuration);
+            return -70 * Math.sin(t * Math.PI);
+        }
+        if (anim.phase === 'slam') {
+            const t = Math.min(1, elapsed / anim.slamDuration);
+            return t < 0.15 ? 12 * (t / 0.15) : 12 * (1 - (t - 0.15) / 0.85);
+        }
+        return 0;
+    }
+
+    drawRopePull() {
+        if (!this.ropePullAnim) return;
+        const anim = this.ropePullAnim;
+        if (anim.phase !== 'pull' && anim.phase !== 'jump') return;
+        const now = performance.now();
+        const elapsed = now - anim.startTime;
+        const center = this.player.getCenter();
+        const yOffset = this.getRopePullPlayerYOffset();
+        const anchorY = center.y + yOffset;
+
+        let t = 1;
+        if (anim.phase === 'pull') {
+            t = Math.min(1, elapsed / anim.pullDuration);
+        }
+
+        for (const b of anim.bugs) {
+            if (!b.enemy) continue;
+            const bc = b.enemy.getCenter();
+            const dx = bc.x - center.x;
+            const dy = bc.y - center.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const sag = dist * 0.18 * (1 - t);
+            const mx = (center.x + bc.x) * 0.5;
+            const my = (anchorY + bc.y) * 0.5 + sag;
+            const alpha = 0.5 + t * 0.5;
+
+            this.ctx.save();
+            this.ctx.strokeStyle = `rgba(139, 90, 43, ${alpha})`;
+            this.ctx.lineWidth = 2 + t * 3;
+            this.ctx.lineCap = 'round';
+            this.ctx.shadowColor = 'rgba(255, 180, 60, 0.5)';
+            this.ctx.shadowBlur = 5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(center.x, anchorY);
+            this.ctx.quadraticCurveTo(mx, my, bc.x, bc.y);
+            this.ctx.stroke();
+            this.ctx.restore();
+        }
     }
 
     addCrack(x, y) {
@@ -1027,21 +1324,22 @@ class Game {
     update() {
         const now = performance.now();
 
-        if (this.adminInfiniteMana) {
-            this.mana = this.maxMana;
+        if (this.adminInfinitePower) {
+            this.power = this.maxPower;
         }
 
-        // Compute charging state dynamically: only after shockwaveDelayMs of holding with full mana.
+        // Compute charging state dynamically: only after shockwaveDelayMs of holding with full power.
         const holdElapsed = this.isHolding ? (now - this.holdStartTime) : 0;
-        this.isChargingShockwave = this.isHolding && this.mana >= this.maxMana && holdElapsed >= this.shockwaveDelayMs;
+        this.isChargingShockwave = this.isHolding && this.power >= this.maxPower && holdElapsed >= this.shockwaveDelayMs;
 
         // Keep camera navigation responsive before quest acceptance by letting
         // the hidden player continue following the cursor target.
-        if (!this.isChargingShockwave) {
+        if (!this.isChargingShockwave && !(this.ropePullAnim && (this.ropePullAnim.phase === 'jump' || this.ropePullAnim.phase === 'slam'))) {
             this.player.update(this.worldWidth, this.worldHeight);
         }
 
         this.updateShockwaveRings();
+        this.updateRopePull();
 
         if (!this.gameStarted) {
             this.particles.update();
@@ -1052,6 +1350,7 @@ class Game {
 
         this.updateProjectiles(now);
 
+        if (!this.ropePullAnim) {
         let dpsFromEnemies = 0;
         for (const enemy of this.currentEnemies) {
             enemy.update(now, this.player, this.worldWidth, this.worldHeight, this.currentEnemies, this.resumeRect);
@@ -1068,13 +1367,30 @@ class Game {
             this.resumeHealth = Math.max(0, this.resumeHealth - dpsFromEnemies / 60);
         }
 
+        // Resolve player-enemy overlap: push enemies away from player.
+        const pCenter = this.player.getCenter();
+        const pRadius = this.player.width * 0.5;
+        for (const enemy of this.currentEnemies) {
+            const ec = enemy.getCenter();
+            const dx = ec.x - pCenter.x;
+            const dy = ec.y - pCenter.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+            const minDist = pRadius + enemy.width * 0.45;
+            if (dist < minDist) {
+                const push = minDist - dist;
+                enemy.x += (dx / dist) * push;
+                enemy.y += (dy / dist) * push;
+            }
+        }
+        }
+
         this.particles.update();
         for (const crack of this.cracks) {
             crack.life -= 1;
         }
         this.cracks = this.cracks.filter((c) => c.life > 0);
 
-        if (this.currentEnemies.length === 0) {
+        if (this.currentEnemies.length === 0 && !this.ropePullAnim) {
             this.floorTransitionTicks++;
             if (this.floorTransitionTicks > 75) {
                 this.currentFloor++;
@@ -1094,8 +1410,8 @@ class Game {
             this.hudState.floorLevel = '1';
             this.hudState.caughtCount = '--';
             this.hudState.progressPct = 0;
-            this.hudState.manaText = `${Math.round(this.mana)}%`;
-            this.hudState.manaPct = Math.max(0, this.mana);
+            this.hudState.powerText = `${Math.round(this.power)}%`;
+            this.hudState.powerPct = Math.max(0, this.power);
             this.hudState.status = 'Read the resume, then click "Yes, I will protect your resume".';
 
             const floorLevelEl = document.getElementById('floorLevel');
@@ -1104,10 +1420,10 @@ class Game {
             if (caughtCountEl) caughtCountEl.textContent = this.hudState.caughtCount;
             const progressBarEl = document.getElementById('progressBar');
             if (progressBarEl) progressBarEl.style.width = `${this.hudState.progressPct}%`;
-            const manaTextEl = document.getElementById('manaText');
-            if (manaTextEl) manaTextEl.textContent = this.hudState.manaText;
-            const manaBarEl = document.getElementById('manaBar');
-            if (manaBarEl) manaBarEl.style.width = `${this.hudState.manaPct}%`;
+            const powerTextEl = document.getElementById('powerText');
+            if (powerTextEl) powerTextEl.textContent = this.hudState.powerText;
+            const powerBarEl = document.getElementById('powerBar');
+            if (powerBarEl) powerBarEl.style.width = `${this.hudState.powerPct}%`;
             const statusEl = document.getElementById('statusText');
             if (statusEl) statusEl.textContent = this.hudState.status;
             return;
@@ -1116,14 +1432,18 @@ class Game {
         const total = this.getEnemyCountForFloor(this.currentFloor);
         const progressPct = (this.defeatedThisFloor / total) * 100;
 
-        const manaPct = Math.round(this.mana);
+        const powerPct = Math.round(this.power);
 
         let status = 'Resume Eating Bugs try to eat when you are far.';
-        if (this.currentEnemies.length === 0) {
+        if (this.currentEnemies.length === 0 && !this.ropePullAnim) {
             status = `Floor cleared. Entering floor ${this.currentFloor + 1}...`;
-        } else if (this.mana >= this.maxMana && this.isChargingShockwave) {
+        } else if (this.ropePullAnim) {
+            if (this.ropePullAnim.phase === 'pull') status = 'Reeling in all bugs...';
+            else if (this.ropePullAnim.phase === 'jump') status = 'SLAM!!!';
+            else status = 'All bugs crushed!';
+        } else if (this.power >= this.maxPower && this.isChargingShockwave) {
             status = 'Shockwave charging... release to detonate!';
-        } else if (this.mana >= this.maxMana) {
+        } else if (this.power >= this.maxPower) {
             status = 'Power full! Hold press to charge shockwave, release to blast all bugs.';
         } else if (this.currentFloor >= 11) {
             status = `Bug upgrade active (Tier ${this.getUpgradeTier(this.currentFloor)}). Bugs are STRONGER!`;
@@ -1132,8 +1452,8 @@ class Game {
         this.hudState.floorLevel = String(this.currentFloor);
         this.hudState.caughtCount = `${this.defeatedThisFloor} / ${total}`;
         this.hudState.progressPct = progressPct;
-        this.hudState.manaText = `${manaPct}%`;
-        this.hudState.manaPct = Math.max(0, this.mana);
+        this.hudState.powerText = `${powerPct}%`;
+        this.hudState.powerPct = Math.max(0, this.power);
         this.hudState.status = status;
 
         const floorLevelEl = document.getElementById('floorLevel');
@@ -1142,10 +1462,10 @@ class Game {
         if (caughtCountEl) caughtCountEl.textContent = this.hudState.caughtCount;
         const progressBarEl = document.getElementById('progressBar');
         if (progressBarEl) progressBarEl.style.width = `${this.hudState.progressPct}%`;
-        const manaTextEl = document.getElementById('manaText');
-        if (manaTextEl) manaTextEl.textContent = this.hudState.manaText;
-        const manaBarEl = document.getElementById('manaBar');
-        if (manaBarEl) manaBarEl.style.width = `${this.hudState.manaPct}%`;
+        const powerTextEl = document.getElementById('powerText');
+        if (powerTextEl) powerTextEl.textContent = this.hudState.powerText;
+        const powerBarEl = document.getElementById('powerBar');
+        if (powerBarEl) powerBarEl.style.width = `${this.hudState.powerPct}%`;
         const statusEl = document.getElementById('statusText');
         if (statusEl) statusEl.textContent = this.hudState.status;
     }
@@ -1325,13 +1645,13 @@ class Game {
             // Power bar (labeled)
             this.ctx.font = '18px Georgia';
             this.ctx.fillStyle = '#4b3a20';
-            this.ctx.fillText(`Power: ${this.hudState.manaText}`, leftX + 20, topY + 154);
-            const manaFull = this.hudState.manaPct >= 100;
-            this.ctx.fillStyle = manaFull ? '#aad4ff' : '#dce8ff';
+            this.ctx.fillText(`Power: ${this.hudState.powerText}`, leftX + 20, topY + 154);
+            const powerFull = this.hudState.powerPct >= 100;
+            this.ctx.fillStyle = powerFull ? '#aad4ff' : '#dce8ff';
             this.ctx.fillRect(leftX + 20, topY + 160, leftNoteW - 40, 10);
-            this.ctx.fillStyle = manaFull ? '#00aaff' : '#4e9bff';
-            this.ctx.fillRect(leftX + 20, topY + 160, (leftNoteW - 40) * (this.hudState.manaPct / 100), 10);
-            if (manaFull) {
+            this.ctx.fillStyle = powerFull ? '#00aaff' : '#4e9bff';
+            this.ctx.fillRect(leftX + 20, topY + 160, (leftNoteW - 40) * (this.hudState.powerPct / 100), 10);
+            if (powerFull) {
                 this.ctx.strokeStyle = '#00ccff';
                 this.ctx.lineWidth = 1;
                 this.ctx.strokeRect(leftX + 20, topY + 160, leftNoteW - 40, 10);
@@ -1703,8 +2023,9 @@ class Game {
         }
 
         this.drawProjectiles();
+        this.drawRopePull();
         if (this.gameStarted) {
-            this.player.draw(this.ctx);
+            this.player.draw(this.ctx, this.getRopePullPlayerYOffset());
         }
         this.particles.draw(this.ctx);
         this.drawCracks();
@@ -1739,10 +2060,11 @@ class Game {
 
     resetGame() {
         this.resumeHealth = 100;
-        this.mana = 0;
+        this.power = 0;
         this.isChargingShockwave = false;
         this.isHolding = false;
         this.shockwaveRings = [];
+        this.ropePullAnim = null;
         this.currentFloor = 1;
         this.defeatedThisFloor = 0;
         this.totalDefeated = 0;
@@ -1768,10 +2090,11 @@ class Game {
         this.preStartZoom = 1;
         this.preStartWheelOffsetX = 0;
         this.preStartWheelOffsetY = 0;
-        this.mana = 0;
+        this.power = 0;
         this.isChargingShockwave = false;
         this.isHolding = false;
         this.shockwaveRings = [];
+        this.ropePullAnim = null;
         this.applyGameStartedVisualState();
         this.resumeHealth = 100;
         this.currentFloor = 1;

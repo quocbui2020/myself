@@ -1,11 +1,13 @@
 // Player class - Knight on horseback with hammer and gun.
 class Player {
-    constructor(x, y) {
+    constructor(x, y, options = {}) {
+        const size = Number.isFinite(options.size) && options.size > 0 ? options.size : 64;
+        const speed = Number.isFinite(options.speed) && options.speed > 0 ? options.speed : 20.0;
         this.x = x;
         this.y = y;
-        this.width = 64;
-        this.height = 58;
-        this.speed = 20.0;
+        this.width = size;
+        this.height = Math.max(44, size * 0.9);
+        this.speed = speed;
         this.targetX = x;
         this.targetY = y;
         this.angle = 0;
@@ -53,14 +55,14 @@ class Player {
         this.y = Math.max(0, Math.min(this.y, mapHeight - this.height));
     }
 
-    draw(ctx) {
+    draw(ctx, yOffset = 0) {
         const center = this.getCenter();
         const legOffset = Math.sin(Date.now() * 0.02) * 2;
         const hammerSwing = this.hammerAnim > 0 ? Math.sin((12 - this.hammerAnim) * 0.5) * 1.2 : 0;
         const gunKick = this.gunAnim > 0 ? (this.gunAnim / 8) * 4 : 0;
 
         ctx.save();
-        ctx.translate(center.x, center.y);
+        ctx.translate(center.x, center.y + yOffset);
         ctx.rotate(this.angle);
 
         // Horse body

@@ -8,12 +8,26 @@
     "technicalSkills": "Array of skill groups. Each item needs label and items[].",
     "workExperience": "Array of jobs. Each job has title, company, dateRange, and highlights[].",
     "education": "Array of education records. Each record has degree, institution, dateRange, and highlights[].",
-    "resumeTypography": "Font settings for resume text. Increase/decrease these values to tune readability."
+    "resumeTypography": "Font settings for resume text. Increase/decrease these values to tune readability.",
+    "gameplaySettings": "Gameplay tuning settings for player and bugs (size, speed, health)."
   },
   "resumeLayout": {
     "_comment": "Main size controls. Edit these two values first when you want bigger/smaller resume.",
     "width": 1280,
-    "height": 1500
+    "height": 1550
+  },
+  "gameplaySettings": {
+    "_comment": "Gameplay knobs. Increase/decrease to tune difficulty and feel.",
+    "_skillAnimationComment": "defaultSkillAnimation: 'shockwave' = expanding ring blast | 'ropepull' = ropes pull bugs to player then slam",
+    "defaultSkillAnimation": "ropepull",
+    "playerSize": 64,
+    "playerSpeed": 20,
+    "bugSize": 50,
+    "bugBossSize": 74,
+    "bugSpeed": 2.7,
+    "bugBossSpeed": 4.05,
+    "bugHealth": 3,
+    "bugBossHealth": 10
   },
   "resumeTypography": {
     "_comment": "All font sizes in px for resume content only.",

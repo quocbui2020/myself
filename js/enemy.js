@@ -6,11 +6,21 @@ class Enemy {
         this.isBoss = Boolean(options.isBoss);
         this.upgradeTier = options.upgradeTier || 0;
 
-        this.width = this.isBoss ? 74 : 50;
-        this.height = this.isBoss ? 74 : 50;
+        const regularSize = Number.isFinite(options.bugSize) && options.bugSize > 0 ? options.bugSize : 50;
+        const bossSize = Number.isFinite(options.bugBossSize) && options.bugBossSize > 0 ? options.bugBossSize : 74;
+        const regularBaseHealth = Number.isFinite(options.bugHealth) && options.bugHealth > 0 ? options.bugHealth : 3;
+        const bossBaseHealth = Number.isFinite(options.bugBossHealth) && options.bugBossHealth > 0 ? options.bugBossHealth : 10;
 
-        const regularBaseSpeed = 2.7 + this.upgradeTier * 0.2;
-        this.baseSpeed = this.isBoss ? regularBaseSpeed * 1.5 : regularBaseSpeed;
+        this.width = this.isBoss ? bossSize : regularSize;
+        this.height = this.isBoss ? bossSize : regularSize;
+
+        const regularBaseSpeed = Number.isFinite(options.bugSpeed) && options.bugSpeed > 0
+            ? options.bugSpeed
+            : (2.7 + this.upgradeTier * 0.2);
+        const bossBaseSpeed = Number.isFinite(options.bugBossSpeed) && options.bugBossSpeed > 0
+            ? options.bugBossSpeed
+            : regularBaseSpeed * 1.5;
+        this.baseSpeed = this.isBoss ? bossBaseSpeed : regularBaseSpeed;
         this.speed = this.baseSpeed;
         this.vx = 0;
         this.vy = 0;
@@ -20,7 +30,7 @@ class Enemy {
         this.stunnedUntil = 0;
         this.wanderAngle = Math.random() * Math.PI * 2;
 
-        this.maxHp = (this.isBoss ? 10 : 3) + this.upgradeTier;
+        this.maxHp = (this.isBoss ? bossBaseHealth : regularBaseHealth) + this.upgradeTier;
         this.hp = this.maxHp;
         this.eatingResume = false;
         this.eatDps = (this.isBoss ? 6 : 2.2) + this.upgradeTier * 0.8;
