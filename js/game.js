@@ -9,12 +9,14 @@ class Game {
         this.worldHeight = 0;
         this.cameraX = 0;
         this.cameraY = 0;
+        this.renderOffsetX = 0;
+        this.renderOffsetY = 0;
         this.cameraDeadzoneX = 0;
         this.cameraDeadzoneY = 0;
 
         // Keep world dimensions fixed regardless of browser zoom or viewport size.
-        this.fixedWorldWidth = 1700;
-        this.fixedWorldHeight = 1900;
+        this.fixedWorldWidth = 1600;
+        this.fixedWorldHeight = 1200;
         this.preStartWheelOffsetY = 0;
 
         this.currentFloor = 1;
@@ -222,8 +224,8 @@ class Game {
 
     screenToWorld(screenX, screenY) {
         return {
-            x: screenX + this.cameraX,
-            y: screenY + this.cameraY
+            x: screenX + this.cameraX - this.renderOffsetX,
+            y: screenY + this.cameraY - this.renderOffsetY
         };
     }
 
@@ -231,6 +233,21 @@ class Game {
         if (!this.player) {
             this.cameraX = 0;
             this.cameraY = 0;
+            return;
+        }
+
+        const maxCameraX = Math.max(0, this.worldWidth - this.width);
+        const maxCameraY = Math.max(0, this.worldHeight - this.height);
+
+        // Before the quest starts, keep navigation document-like:
+        // fixed horizontal framing + wheel-only vertical scrolling.
+        if (!this.gameStarted) {
+            this.cameraX = maxCameraX * 0.5;
+            this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
+            this.cameraY = this.preStartWheelOffsetY;
+
+            this.renderOffsetX = this.width > this.worldWidth ? (this.width - this.worldWidth) * 0.5 : 0;
+            this.renderOffsetY = this.height > this.worldHeight ? (this.height - this.worldHeight) * 0.5 : 0;
             return;
         }
 
@@ -251,15 +268,11 @@ class Game {
             this.cameraY = center.y - (this.height - this.cameraDeadzoneY);
         }
 
-        this.cameraX = Math.max(0, Math.min(this.cameraX, this.worldWidth - this.width));
-        this.cameraY = Math.max(0, Math.min(this.cameraY, this.worldHeight - this.height));
+        this.cameraX = Math.max(0, Math.min(this.cameraX, maxCameraX));
+        this.cameraY = Math.max(0, Math.min(this.cameraY, maxCameraY));
 
-        if (!this.gameStarted && this.worldHeight > this.height) {
-            const minOffsetY = -this.cameraY;
-            const maxOffsetY = this.worldHeight - this.height - this.cameraY;
-            this.preStartWheelOffsetY = Math.max(minOffsetY, Math.min(this.preStartWheelOffsetY, maxOffsetY));
-            this.cameraY += this.preStartWheelOffsetY;
-        }
+        this.renderOffsetX = this.width > this.worldWidth ? (this.width - this.worldWidth) * 0.5 : 0;
+        this.renderOffsetY = this.height > this.worldHeight ? (this.height - this.worldHeight) * 0.5 : 0;
     }
 
     centerCameraOnPlayer() {
@@ -272,7 +285,7 @@ class Game {
     }
 
     updateResumeRect() {
-        const pageW = Math.min(760, this.worldWidth * 0.42);
+        const pageW = Math.min(760, this.worldWidth * 0.52);
         const pageH = Math.min(1040, this.worldHeight * 0.82);
         const x = (this.worldWidth - pageW) / 2;
         const y = (this.worldHeight - pageH) / 2;
@@ -641,7 +654,7 @@ class Game {
             const buttonW = 224;
             const buttonH = 28;
             const buttonX = noteCenterX - buttonW / 2;
-            const buttonY = topY + 146;
+            const buttonY = topY + 125;
             this.acceptButtonRect = { x: buttonX, y: buttonY, width: buttonW, height: buttonH };
 
             this.ctx.fillStyle = '#ffe07a';
@@ -916,10 +929,11 @@ class Game {
     }
 
     draw() {
-        this.ctx.clearRect(0, 0, this.width, this.height);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, this.width, this.height);
 
         this.ctx.save();
-        this.ctx.translate(-this.cameraX, -this.cameraY);
+        this.ctx.translate(-this.cameraX + this.renderOffsetX, -this.cameraY + this.renderOffsetY);
 
         this.drawResumeTerrain();
         this.drawWorldNotes();
