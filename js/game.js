@@ -85,6 +85,7 @@ class Game {
     }
 
     bindEvents() {
+        this.canvas.style.touchAction = 'none';
         window.addEventListener('resize', () => this.resizeCanvas());
 
         this.canvas.addEventListener('mousemove', (event) => {
@@ -191,9 +192,13 @@ class Game {
                         this.preStartWheelOffsetX -= deltaX * 0.15; // reduced sensitivity
                         
                         const maxCameraX = Math.max(0, this.worldWidth - this.width);
-                        const maxCameraY = Math.max(0, this.worlsdHeight - this.height);
+                        const maxCameraY = Math.max(0, this.worldHeight - this.height);
                         this.preStartWheelOffsetX = Math.max(0, Math.min(this.preStartWheelOffsetX, maxCameraX));
                         this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
+
+                        // Use incremental deltas so swipe feels stable instead of compounding from first touch point.
+                        this.touchState.startX = this.touchState.currentX;
+                        this.touchState.startY = this.touchState.currentY;
                     } else {
                         // In-game: swipe to move player (cursor follows touch)
                         const worldPos = this.screenToWorld(this.touchState.currentX, this.touchState.currentY);
@@ -241,6 +246,24 @@ class Game {
 
         this.canvas.addEventListener('touchend', (event) => {
             event.preventDefault();
+            this.touchState.touchCount = event.touches.length;
+            this.touchState.lastDistance = 0;
+
+            if (event.touches.length === 1) {
+                // If a pinch ends with one finger still down, continue smooth one-finger swipe.
+                const rect = this.canvas.getBoundingClientRect();
+                const touch = event.touches[0];
+                this.touchState.startX = touch.clientX - rect.left;
+                this.touchState.startY = touch.clientY - rect.top;
+                this.touchState.currentX = this.touchState.startX;
+                this.touchState.currentY = this.touchState.startY;
+                this.touchState.isActive = true;
+            } else if (event.touches.length === 0) {
+                this.touchState.isActive = false;
+            }
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchcancel', () => {
             this.touchState.isActive = false;
             this.touchState.touchCount = 0;
             this.touchState.lastDistance = 0;
