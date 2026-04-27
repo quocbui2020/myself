@@ -47,6 +47,10 @@ class Game {
         this.isHolding = false;
         this.holdStartTime = 0;
         this.shockwaveRings = [];
+        this.adminPanelOpen = false;
+        this.adminOneHitKill = false;
+        this.adminInfiniteMana = false;
+        this.adminPanelEl = null;
         this.resumeRect = { x: 0, y: 0, width: 0, height: 0 };
         this.gameStarted = false;
         this.acceptButtonRect = null;
@@ -88,6 +92,7 @@ class Game {
         this.centerCameraOnPlayer();
 
         this.bindEvents();
+        this.createAdminPanel();
         this.applyGameStartedVisualState();
         this.updateHud();
         this.gameLoop();
@@ -307,7 +312,10 @@ class Game {
 
         window.addEventListener('keydown', (event) => {
             const key = event.key.toLowerCase();
-            if (key === 'r') {
+            if (event.ctrlKey && event.shiftKey && key === 'z') {
+                event.preventDefault();
+                this.toggleAdminPanel();
+            } else if (key === 'r') {
                 event.preventDefault();
                 this.resetGame();
             } else if (key === 'b') {
@@ -315,6 +323,66 @@ class Game {
                 window.history.back();
             }
         });
+    }
+
+    createAdminPanel() {
+        const panel = document.createElement('div');
+        panel.id = 'adminPanel';
+        panel.style.position = 'fixed';
+        panel.style.top = '14px';
+        panel.style.right = '14px';
+        panel.style.zIndex = '9999';
+        panel.style.width = '220px';
+        panel.style.padding = '12px';
+        panel.style.border = '2px solid #364152';
+        panel.style.borderRadius = '10px';
+        panel.style.background = 'rgba(245, 248, 255, 0.97)';
+        panel.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)';
+        panel.style.display = 'none';
+        panel.style.fontFamily = 'Arial, sans-serif';
+        panel.style.color = '#111827';
+
+        panel.innerHTML = [
+            '<div style="font-weight:700; font-size:14px; margin-bottom:8px;">Admin Panel</div>',
+            '<label style="display:flex; align-items:center; gap:8px; margin:8px 0; font-size:13px;">',
+            '<input id="adminOneHitKillToggle" type="checkbox" />',
+            'One Hit Kill',
+            '</label>',
+            '<label style="display:flex; align-items:center; gap:8px; margin:8px 0; font-size:13px;">',
+            '<input id="adminInfiniteManaToggle" type="checkbox" />',
+            'Infinite Mama',
+            '</label>',
+            '<div style="font-size:11px; color:#4b5563; margin-top:8px;">Hotkey: Ctrl+Shift+Z</div>'
+        ].join('');
+
+        document.body.appendChild(panel);
+        this.adminPanelEl = panel;
+
+        const oneHitToggle = panel.querySelector('#adminOneHitKillToggle');
+        const infiniteManaToggle = panel.querySelector('#adminInfiniteManaToggle');
+        if (oneHitToggle) {
+            oneHitToggle.checked = this.adminOneHitKill;
+            oneHitToggle.addEventListener('change', (event) => {
+                this.adminOneHitKill = !!event.target.checked;
+            });
+        }
+        if (infiniteManaToggle) {
+            infiniteManaToggle.checked = this.adminInfiniteMana;
+            infiniteManaToggle.addEventListener('change', (event) => {
+                this.adminInfiniteMana = !!event.target.checked;
+                if (this.adminInfiniteMana) {
+                    this.mana = this.maxMana;
+                    this.updateHud();
+                }
+            });
+        }
+    }
+
+    toggleAdminPanel() {
+        this.adminPanelOpen = !this.adminPanelOpen;
+        if (this.adminPanelEl) {
+            this.adminPanelEl.style.display = this.adminPanelOpen ? 'block' : 'none';
+        }
     }
 
     async loadResumeData() {
@@ -625,7 +693,8 @@ class Game {
             const e = enemy.getCenter();
             const d = this.distance(impactX, impactY, e.x, e.y);
             if (d <= this.hammerRange) {
-                const dead = enemy.applyDamage(this.hammerDamage);
+                const damage = this.adminOneHitKill ? enemy.maxHp : this.hammerDamage;
+                const dead = enemy.applyDamage(damage);
                 this.particles.createDamage(e.x, e.y);
                 if (dead) {
                     this.currentEnemies.splice(i, 1);
@@ -659,7 +728,8 @@ class Game {
             const e = enemy.getCenter();
             const d = this.distance(impactX, impactY, e.x, e.y);
             if (d <= this.hammerRange) {
-                const dead = enemy.applyDamage(this.hammerDamage);
+                const damage = this.adminOneHitKill ? enemy.maxHp : this.hammerDamage;
+                const dead = enemy.applyDamage(damage);
                 this.particles.createDamage(e.x, e.y);
                 if (dead) {
                     this.currentEnemies.splice(i, 1);
@@ -701,7 +771,11 @@ class Game {
 
     fireShockwave() {
         if (this.mana < this.maxMana) return;
-        this.mana = 0;
+        if (!this.adminInfiniteMana) {
+            this.mana = 0;
+        } else {
+            this.mana = this.maxMana;
+        }
         const center = this.player.getCenter();
         const maxRadius = Math.sqrt(this.worldWidth * this.worldWidth + this.worldHeight * this.worldHeight);
         this.shockwaveRings.push({
@@ -862,6 +936,10 @@ class Game {
     update() {
         const now = performance.now();
 
+        if (this.adminInfiniteMana) {
+            this.mana = this.maxMana;
+        }
+
         // Compute charging state dynamically: only after shockwaveDelayMs of holding with full mana.
         const holdElapsed = this.isHolding ? (now - this.holdStartTime) : 0;
         this.isChargingShockwave = this.isHolding && this.mana >= this.maxMana && holdElapsed >= this.shockwaveDelayMs;
@@ -949,15 +1027,15 @@ class Game {
 
         const manaPct = Math.round(this.mana);
 
-        let status = '🐛 Resume Eating Bugs try to eat when you are far.';
+        let status = 'Resume Eating Bugs try to eat when you are far.';
         if (this.currentEnemies.length === 0) {
-            status = `✅ Floor cleared. Entering floor ${this.currentFloor + 1}...`;
+            status = `Floor cleared. Entering floor ${this.currentFloor + 1}...`;
         } else if (this.mana >= this.maxMana && this.isChargingShockwave) {
-            status = '⚡ Shockwave charging... release to detonate!';
+            status = 'Shockwave charging... release to detonate!';
         } else if (this.mana >= this.maxMana) {
-            status = '⚡ Mana full! Hold press to charge shockwave, release to blast all bugs.';
+            status = 'Power full! Hold press to charge shockwave, release to blast all bugs.';
         } else if (this.currentFloor >= 11) {
-            status = `🔥 Bug upgrade active (Tier ${this.getUpgradeTier(this.currentFloor)}). Bugs are STRONGER!`;
+            status = `Bug upgrade active (Tier ${this.getUpgradeTier(this.currentFloor)}). Bugs are STRONGER!`;
         }
 
         this.hudState.floorLevel = String(this.currentFloor);
@@ -1144,10 +1222,10 @@ class Game {
             this.ctx.fillStyle = '#f08b4f';
             this.ctx.fillRect(leftX + 18, topY + 96, 220 * (this.hudState.progressPct / 100), 8);
 
-            // Mana bar (labeled)
+            // Power bar (labeled)
             this.ctx.font = '14px Comic Sans MS';
             this.ctx.fillStyle = '#4b3a20';
-            this.ctx.fillText(`Mana: ${this.hudState.manaText}`, leftX + 18, topY + 120);
+            this.ctx.fillText(`Power: ${this.hudState.manaText}`, leftX + 18, topY + 120);
             const manaFull = this.hudState.manaPct >= 100;
             this.ctx.fillStyle = manaFull ? '#aad4ff' : '#dce8ff';
             this.ctx.fillRect(leftX + 18, topY + 125, 220, 8);
@@ -1171,7 +1249,7 @@ class Game {
             this.ctx.font = '13px Comic Sans MS';
             this.ctx.fillText('Move: Cursor / Touch', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 146);
             this.ctx.fillText('Attack: Click / Tap', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 166);
-            this.ctx.fillText('Mana Full: Hold, Release', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
+            this.ctx.fillText('Power Full: Hold, Release', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
             this.ctx.fillText('R: Reset, B: Back', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 206);
         }
     }
