@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quoc Bui - Portfolio</title>
+    <title>Quoc Bui | Software Developer | .NET and React</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #eef3fb 0%, #e4ebf6 100%);
             color: #333;
             line-height: 1.6;
             min-height: 100vh;
@@ -31,7 +31,7 @@
             border-radius: 12px;
             padding: 22px 30px;
             margin-bottom: 22px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 26px rgba(23, 42, 75, 0.08);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -82,7 +82,7 @@
             background: white;
             border-radius: 12px;
             padding: 22px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 26px rgba(23, 42, 75, 0.08);
             display: flex;
             gap: 24px;
             align-items: flex-start;
@@ -116,7 +116,7 @@
 
         .nav-btn {
             padding: 10px 20px;
-            background: #667eea;
+            background: #1f6fb2;
             color: white;
             border: none;
             border-radius: 6px;
@@ -127,19 +127,25 @@
         }
 
         .nav-btn:hover {
-            background: #764ba2;
+            background: #175b93;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 5px 15px rgba(24, 88, 141, 0.22);
         }
 
         .nav-btn.secondary {
             background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
+            color: #1f6fb2;
+            border: 2px solid #1f6fb2;
         }
 
         .nav-btn.secondary:hover {
-            background: #f8f9ff;
+            background: #f4f8fd;
+        }
+
+        .nav-btn.tertiary {
+            background: #eef5fc;
+            color: #1f6fb2;
+            border: 1px solid #bfd5ea;
         }
 
         /* Main Content */
@@ -154,7 +160,7 @@
             background: white;
             border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 26px rgba(23, 42, 75, 0.08);
         }
 
         .card h2 {
@@ -168,6 +174,38 @@
             color: #555;
             font-size: 16px;
             line-height: 1.8;
+        }
+
+        .impact-title {
+            color: #1f6fb2;
+            font-size: 17px;
+            margin-top: 16px;
+            margin-bottom: 8px;
+        }
+
+        .impact-list {
+            margin-left: 20px;
+            color: #4b5663;
+            line-height: 1.7;
+        }
+
+        .quick-facts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+
+        .fact-chip {
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid #bfd5ea;
+            background: #f4f9ff;
+            color: #1c4f7e;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.3;
         }
 
         /* Skills */
@@ -251,6 +289,16 @@
         .contact-item strong {
             color: #667eea;
             min-width: 80px;
+        }
+
+        .contact-item a {
+            color: #1f6fb2;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-item a:hover {
+            text-decoration: underline;
         }
 
         /* Responsive Design */
@@ -338,13 +386,101 @@
 
         /* Print Styles */
         @media print {
+            @page {
+                size: A4;
+                margin: 12mm;
+            }
+
             body {
                 background: white;
+            }
+
+            .container {
+                max-width: 100%;
+                padding: 0;
             }
 
             .header-nav,
             .nav-btn {
                 display: none;
+            }
+
+            .hero-card {
+                display: grid;
+                grid-template-columns: 120px 1fr;
+                gap: 14px;
+                align-items: start;
+                padding: 16px;
+            }
+
+            .quick-facts {
+                margin-top: 8px;
+                margin-bottom: 8px;
+                gap: 6px;
+            }
+
+            .fact-chip {
+                border: 1px solid #cbd9ea;
+                background: #f7faff;
+                color: #1a446b;
+                font-size: 10px;
+                padding: 4px 8px;
+            }
+
+            .hero-photo {
+                max-width: 120px;
+                width: 120px;
+                flex: none;
+            }
+
+            .profile-pic {
+                width: 120px;
+                height: 120px;
+                border-radius: 8px;
+                box-shadow: none;
+                border: 1px solid #c7d3e5;
+            }
+
+            .card {
+                box-shadow: none;
+                border: 1px solid #dbe3ef;
+                padding: 16px;
+            }
+
+            .skills-grid {
+                display: block;
+            }
+
+            .skill-group {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                border-left: 0;
+                background: transparent;
+                padding: 0;
+                margin-bottom: 8px;
+            }
+
+            .skill-group h3 {
+                margin-bottom: 4px;
+                font-size: 12px;
+            }
+
+            .skill-item {
+                border: 0;
+                background: transparent;
+                color: #2b3340;
+                padding: 0;
+                margin: 0;
+                font-size: 11px;
+                font-weight: 500;
+            }
+
+            .skill-item::after {
+                content: ', ';
+            }
+
+            .skill-group .skill-item:last-child::after {
+                content: '';
             }
 
             .card {
@@ -370,9 +506,9 @@
                 </div>
             </div>
             <div class="header-nav">
-                <a href="game.html" class="nav-btn">View My One Page Resume</a>
-                <button class="nav-btn secondary" onclick="scrollToSection('resume')">Resume</button>
-                <button class="nav-btn secondary" onclick="scrollToSection('contact')">Contact</button>
+                <a id="emailCta" href="#contact" class="nav-btn">Contact Me</a>
+                <button class="nav-btn secondary" onclick="downloadResumePdf()">Download Resume (PDF)</button>
+                <a href="game.html" class="nav-btn tertiary">Interactive Resume Demo</a>
             </div>
         </header>
 
@@ -383,7 +519,16 @@
                 </div>
                 <div class="about-content">
                     <h2>About Me</h2>
+                    <div class="quick-facts" id="quickFacts">
+                        <span class="fact-chip">4+ years in production software</span>
+                        <span class="fact-chip">22+ payment integrations delivered</span>
+                        <span class="fact-chip">.NET 8 migration experience</span>
+                    </div>
                     <p class="about-text" id="aboutText">Loading...</p>
+                    <h3 class="impact-title">Impact Highlights</h3>
+                    <ul id="impactHighlights" class="impact-list">
+                        <li>Loading impact highlights...</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -394,11 +539,15 @@
                 <div class="contact-info">
                     <div class="contact-item">
                         <strong>Email:</strong>
-                        <span id="personEmail">-</span>
+                        <a id="personEmail" href="#">-</a>
                     </div>
                     <div class="contact-item">
                         <strong>GitHub:</strong>
                         <a id="personGithub" href="#" target="_blank" rel="noopener noreferrer">-</a>
+                    </div>
+                    <div class="contact-item">
+                        <strong>LinkedIn:</strong>
+                        <a id="personLinkedin" href="#" target="_blank" rel="noopener noreferrer">-</a>
                     </div>
                 </div>
             </div>
@@ -418,7 +567,7 @@
             </div>
         </div>
 
-        <div class="card">
+        <div class="card" id="projectsCard">
             <h2>Projects</h2>
             <div id="projectsContainer">
                 <div class="empty-state">Loading projects...</div>
@@ -439,7 +588,8 @@
         "name": "QUOC NGOC BUI",
         "title": "Software Developer",
         "email": "quocbui824@gmail.com",
-        "github": "https://github.com/quocbui2020"
+        "github": "https://github.com/quocbui2020",
+        "linkedin": "https://www.linkedin.com/in/quoc-ngoc-bui"
     },
     "summary": "Software Developer with 4+ years of hands-on experience developing and maintaining web applications. Experienced with C#, .NET Framework, .NET Core, Angular, React, TypeScript, and T-SQL. Strong background in production environments and application development lifecycle. Go-to person for payment gateway implementation and critical system issues. Seeking to apply expertise in modernizing and supporting core application platforms.",
     "technicalSkills": [
@@ -591,7 +741,16 @@
                         }
                 }
 
+        let resumePdfUrl = '';
+        let resumeLoaded = false;
+        let resumeLoadPromise = null;
+
         async function loadResume() {
+            if (resumeLoadPromise) {
+                return resumeLoadPromise;
+            }
+
+            resumeLoadPromise = (async () => {
             try {
                 const response = await fetch(`resume.json?t=${Date.now()}`, { cache: 'no-store' });
                 if (!response.ok) {
@@ -599,14 +758,19 @@
                 }
                 const data = await response.json();
                 renderResume(data);
+                resumeLoaded = true;
             } catch (error) {
                                 const embedded = getEmbeddedResumeData();
                                 if (embedded) {
                                         renderResume(embedded);
+                                        resumeLoaded = true;
                                         return;
                                 }
                                 console.error('Error loading resume:', error);
             }
+            })();
+
+            return resumeLoadPromise;
         }
 
         function renderResume(data) {
@@ -651,11 +815,41 @@
             document.getElementById('personName').textContent = personal.name || 'N/A';
             document.getElementById('personTitle').textContent = personal.title || 'N/A';
             document.getElementById('aboutText').textContent = summary;
-            document.getElementById('personEmail').textContent = personal.email || '-';
+            const emailLink = document.getElementById('personEmail');
+            const email = personal.email || '-';
+            emailLink.textContent = email;
+            emailLink.href = personal.email ? `mailto:${personal.email}` : '#';
+
+            const emailCta = document.getElementById('emailCta');
+            emailCta.href = personal.email ? `mailto:${personal.email}` : '#contact';
+
+            resumePdfUrl = personal.resumePdf || '';
+
             const githubLink = document.getElementById('personGithub');
             const github = personal.github || '-';
             githubLink.textContent = github;
             githubLink.href = personal.github || '#';
+
+            const linkedinLink = document.getElementById('personLinkedin');
+            const linkedin = personal.linkedin || '-';
+            linkedinLink.textContent = linkedin;
+            linkedinLink.href = personal.linkedin || '#';
+
+            const impactHighlights = document.getElementById('impactHighlights');
+            const sourceHighlights = Array.isArray(data.workExperience) && data.workExperience.length > 0
+                ? (data.workExperience[0].highlights || [])
+                : [];
+            const topImpact = sourceHighlights.slice(0, 3);
+            impactHighlights.innerHTML = topImpact.map((item) => `<li>${item}</li>`).join('') || '<li>Built and supported enterprise production applications across .NET and JavaScript stack.</li>';
+
+            const quickFacts = document.getElementById('quickFacts');
+            if (quickFacts) {
+                quickFacts.innerHTML = [
+                    '<span class="fact-chip">4+ years in production software</span>',
+                    '<span class="fact-chip">22+ payment integrations delivered</span>',
+                    '<span class="fact-chip">.NET 8 migration experience</span>'
+                ].join('');
+            }
 
             // Skills
             const skillsContainer = document.getElementById('skillsContainer');
@@ -678,12 +872,18 @@
 
             // Projects
             const projectsContainer = document.getElementById('projectsContainer');
+            const projectsCard = document.getElementById('projectsCard');
+            if (projects.length === 0) {
+                projectsCard.style.display = 'none';
+            } else {
+                projectsCard.style.display = 'block';
+            }
             projectsContainer.innerHTML = projects.map(proj => `
                 <div class="project-item">
                     <h3>${proj.name}</h3>
                     <div class="description">${proj.description}</div>
                 </div>
-            `).join('') || '<div class="empty-state">No projects listed</div>';
+            `).join('');
 
             // Education
             const educationContainer = document.getElementById('educationContainer');
@@ -700,6 +900,23 @@
             const element = document.getElementById(sectionId);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function downloadResumePdf() {
+            if (resumePdfUrl) {
+                window.open(resumePdfUrl, '_blank');
+            } else {
+                const printNow = () => {
+                    // Let browser layout settle so dynamic sections are fully rendered in print preview.
+                    setTimeout(() => window.print(), 120);
+                };
+
+                if (resumeLoaded) {
+                    printNow();
+                } else {
+                    loadResume().finally(printNow);
+                }
             }
         }
 

@@ -632,6 +632,57 @@ class Game {
         this.ctx.stroke();
     }
 
+    drawSkillEntry(label, items, x, y, maxWidth, lineHeight) {
+        const safeLabel = String(label || '').trim();
+        const itemText = Array.isArray(items) ? items.join(', ') : String(items || '');
+
+        this.ctx.fillStyle = '#2f2a22';
+        this.ctx.font = 'bold 12px Georgia';
+        this.ctx.fillText(`${safeLabel}:`, x, y);
+
+        // Draw underline under the skill category label for a resume-like emphasis.
+        const labelWidth = this.ctx.measureText(safeLabel).width;
+        this.ctx.strokeStyle = '#2f2a22';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y + 2);
+        this.ctx.lineTo(x + labelWidth, y + 2);
+        this.ctx.stroke();
+
+        const valueX = x + this.ctx.measureText(`${safeLabel}: `).width;
+        const firstLineWidth = Math.max(80, maxWidth - (valueX - x));
+        const remainingLinesWidth = Math.max(80, maxWidth - 18);
+
+        this.ctx.fillStyle = '#4a4438';
+        this.ctx.font = '12px Georgia';
+
+        const words = itemText.split(/\s+/).filter(Boolean);
+        let line = '';
+        let currentY = y;
+
+        for (const word of words) {
+            const next = line ? `${line} ${word}` : word;
+            const widthLimit = currentY === y ? firstLineWidth : remainingLinesWidth;
+            const nextWidth = this.ctx.measureText(next).width;
+            if (nextWidth <= widthLimit) {
+                line = next;
+            } else {
+                const drawX = currentY === y ? valueX : x + 18;
+                this.ctx.fillText(line, drawX, currentY);
+                currentY += lineHeight;
+                line = word;
+            }
+        }
+
+        if (line) {
+            const drawX = currentY === y ? valueX : x + 18;
+            this.ctx.fillText(line, drawX, currentY);
+            currentY += lineHeight;
+        }
+
+        return currentY;
+    }
+
     drawWorldNotes() {
         const leftX = this.resumeRect.x - 290;
         const topY = this.resumeRect.y + 80;
@@ -711,7 +762,8 @@ class Game {
                 const p = this.resumeData.personal;
                 this.ctx.fillText(`${p.name || ''} - ${p.title || ''}`, noteX + 18, noteY + 56);
                 const gh = String(p.github || '').replace('https://', '');
-                this.ctx.fillText(`${p.email || ''} | ${gh}`, noteX + 18, noteY + 78);
+                const li = String((p.linkedin || '').replace('https://www.', '').replace('https://', ''));
+                this.ctx.fillText(`${p.email || ''} | ${gh} | ${li}`, noteX + 18, noteY + 78);
             }
 
             const exp = this.resumeData && Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience.slice(0, 3) : [];
@@ -790,26 +842,24 @@ class Game {
             cursorY += 23;
             this.ctx.font = '12px Georgia';
             this.ctx.fillStyle = '#4a4438';
-            cursorY = this.drawWrappedText(this.resumeData.summary || '', left, cursorY, contentW, 18, 6);
-            cursorY += 12;
+            cursorY = this.drawWrappedText(this.resumeData.summary || '', left, cursorY, contentW, 17, 4);
+            cursorY += 8;
 
             this.drawSectionTitle('TECHNICAL SKILLS', left, cursorY, contentW);
             cursorY += 23;
-            this.ctx.font = '12px Georgia';
-            this.ctx.fillStyle = '#4a4438';
             const skills = Array.isArray(this.resumeData.technicalSkills) ? this.resumeData.technicalSkills : [];
-            for (const skill of skills) {
-                const skillLine = `${skill.label}: ${(skill.items || []).join(', ')}`;
-                cursorY = this.drawWrappedText(skillLine, left, cursorY, contentW, 17, 2);
-                cursorY += 3;
-                if (cursorY > y + pageH - 340) break;
+            for (const skill of skills.slice(0, 4)) {
+                cursorY = this.drawSkillEntry(skill.label, skill.items || [], left, cursorY, contentW, 17);
+                cursorY += 4;
+                if (cursorY > y + pageH - 520) break;
             }
             cursorY += 8;
 
             this.drawSectionTitle('WORK EXPERIENCES', left, cursorY, contentW);
             cursorY += 25;
             const jobs = Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience : [];
-            for (const job of jobs) {
+            for (let jobIndex = 0; jobIndex < jobs.length; jobIndex++) {
+                const job = jobs[jobIndex];
                 if (cursorY > y + pageH - 180) break;
                 this.ctx.fillStyle = '#2f2a22';
                 this.ctx.font = 'bold 14px Georgia';
@@ -826,14 +876,17 @@ class Game {
                 cursorY += 17;
 
                 this.ctx.font = '12px Georgia';
-                const highlights = Array.isArray(job.highlights) ? job.highlights.slice(0, 2) : [];
+                const highlights = Array.isArray(job.highlights) ? job.highlights : [];
+                const maxBullets = jobIndex === 0 ? highlights.length : 1;
                 for (const bullet of highlights) {
+                    if (maxBullets <= 0) break;
                     if (cursorY > y + pageH - 145) break;
                     this.ctx.fillText('•', left + 4, cursorY);
-                    cursorY = this.drawWrappedText(bullet, left + 18, cursorY, contentW - 18, 17, 2);
-                    cursorY += 2;
+                    cursorY = this.drawWrappedText(bullet, left + 18, cursorY, contentW - 18, 16, 3);
+                    cursorY += 1;
+                    if (jobIndex > 0) break;
                 }
-                cursorY += 7;
+                cursorY += 5;
             }
 
             if (cursorY < y + pageH - 90) {
