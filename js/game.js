@@ -19,6 +19,7 @@ class Game {
         this.fixedWorldHeight = 1200;
         this.preStartWheelOffsetX = 0;
         this.preStartWheelOffsetY = 0;
+        this.preStartZoom = 1;
 
         this.currentFloor = 1;
         this.currentEnemies = [];
@@ -125,6 +126,7 @@ class Game {
         // Touch events for mobile controls
         this.canvas.addEventListener('touchstart', (event) => {
             event.preventDefault();
+
             if (event.touches.length > 0) {
                 const touch = event.touches[0];
                 const rect = this.canvas.getBoundingClientRect();
@@ -170,6 +172,7 @@ class Game {
 
         this.canvas.addEventListener('touchmove', (event) => {
             event.preventDefault();
+
             if (event.touches.length > 0) {
                 const rect = this.canvas.getBoundingClientRect();
                 const touch = event.touches[0];
@@ -229,16 +232,14 @@ class Game {
                         // First pinch detection: initialize the baseline distance
                         this.touchState.lastDistance = currentDistance;
                     } else {
-                        // Subsequent pinch: calculate delta and apply scroll
-                        const deltaDist = currentDistance - this.touchState.lastDistance;
-                        const sensitivity = 2.2;
+                        // Subsequent pinch: apply zoom ratio relative to previous frame.
+                        const zoomRatio = currentDistance / this.touchState.lastDistance;
                         
                         if (!this.gameStarted) {
-                            // Pre-game: use pinch to scroll resume
-                            // Pinch in (fingers closer, deltaDist negative) = zoom out = scroll down (increase offset)
-                            // Pinch out (fingers apart, deltaDist positive) = zoom in = scroll up (decrease offset)
-                            this.preStartWheelOffsetY -= deltaDist * sensitivity;
-                            const maxCameraY = Math.max(0, this.worldHeight - this.height);
+                            this.preStartZoom = Math.max(0.7, Math.min(this.preStartZoom * zoomRatio, 2.2));
+                            const maxCameraX = Math.max(0, this.worldWidth - this.width / this.preStartZoom);
+                            const maxCameraY = Math.max(0, this.worldHeight - this.height / this.preStartZoom);
+                            this.preStartWheelOffsetX = Math.max(0, Math.min(this.preStartWheelOffsetX, maxCameraX));
                             this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
                         } else {
                             // In-game: pinch could zoom camera (future enhancement)
@@ -393,9 +394,10 @@ class Game {
     }
 
     screenToWorld(screenX, screenY) {
+        const scale = this.gameStarted ? 1 : this.preStartZoom;
         return {
-            x: screenX + this.cameraX - this.renderOffsetX,
-            y: screenY + this.cameraY - this.renderOffsetY
+            x: (screenX - this.renderOffsetX) / scale + this.cameraX,
+            y: (screenY - this.renderOffsetY) / scale + this.cameraY
         };
     }
 
@@ -406,8 +408,11 @@ class Game {
             return;
         }
 
-        const maxCameraX = Math.max(0, this.worldWidth - this.width);
-        const maxCameraY = Math.max(0, this.worldHeight - this.height);
+        const scale = this.gameStarted ? 1 : this.preStartZoom;
+        const viewportWorldWidth = this.width / scale;
+        const viewportWorldHeight = this.height / scale;
+        const maxCameraX = Math.max(0, this.worldWidth - viewportWorldWidth);
+        const maxCameraY = Math.max(0, this.worldHeight - viewportWorldHeight);
 
         // Before the quest starts, keep navigation document-like:
         // allow both horizontal and vertical scrolling via swipe/wheel.
@@ -417,8 +422,10 @@ class Game {
             this.cameraX = this.preStartWheelOffsetX;
             this.cameraY = this.preStartWheelOffsetY;
 
-            this.renderOffsetX = this.width > this.worldWidth ? (this.width - this.worldWidth) * 0.5 : 0;
-            this.renderOffsetY = this.height > this.worldHeight ? (this.height - this.worldHeight) * 0.5 : 0;
+            const scaledWorldWidth = this.worldWidth * scale;
+            const scaledWorldHeight = this.worldHeight * scale;
+            this.renderOffsetX = this.width > scaledWorldWidth ? (this.width - scaledWorldWidth) * 0.5 : 0;
+            this.renderOffsetY = this.height > scaledWorldHeight ? (this.height - scaledWorldHeight) * 0.5 : 0;
             return;
         }
 
@@ -1180,7 +1187,10 @@ class Game {
         this.ctx.fillRect(0, 0, this.width, this.height);
 
         this.ctx.save();
-        this.ctx.translate(-this.cameraX + this.renderOffsetX, -this.cameraY + this.renderOffsetY);
+        const scale = this.gameStarted ? 1 : this.preStartZoom;
+        this.ctx.translate(this.renderOffsetX, this.renderOffsetY);
+        this.ctx.scale(scale, scale);
+        this.ctx.translate(-this.cameraX, -this.cameraY);
 
         this.drawResumeTerrain();
         this.drawWorldNotes();
@@ -1242,6 +1252,7 @@ class Game {
     startGame() {
         if (this.gameStarted) return;
         this.gameStarted = true;
+        this.preStartZoom = 1;
         this.preStartWheelOffsetX = 0;
         this.preStartWheelOffsetY = 0;
         this.applyGameStartedVisualState();
