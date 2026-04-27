@@ -88,8 +88,8 @@
       "company": "ImageTrend, LLC.",
       "dateRange": "Current",
       "highlights": [
-        "Owned end-to-end design, development, architecture, and maintenance of a payment gateway platform integrating 22+ payment providers across the C#/.NET stack, serving as the subject matter expert in payment gateway integration.",
-        "Led Payment Gateway Framework project - designed and developed secure payment integrations for multiple payment services.",
+        "Designed, developed, and maintained payment gateway integrations (22+ providers) across C#/.NET systems, acting as the subject matter expert for integration architecture and implementation.",
+        "Developed the Payment Gateway Framework as a reusable foundation for secure multi-provider integrations, reducing duplicate implementation effort across services.",
         "Architected and delivered .NET 8 migration for legacy systems, including assisting senior developer on full CI/CD pipeline remediation across Azure DevOps.",
         "Implemented JWT, OAuth, and AES encryption to protect sensitive payment data and prevent security vulnerabilities in production.",
         "Maintained unit and integration test suites under Agile sprints using Azure DevOps, ensuring production code quality.",
