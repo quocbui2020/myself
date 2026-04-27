@@ -36,7 +36,7 @@ class Game {
         this.resumeHealth = 100;
         this.resumeRect = { x: 0, y: 0, width: 0, height: 0 };
         this.showResumeNote = false;
-        this.resumeData = this.getCachedResumeData();
+        this.resumeData = this.getEmbeddedResumeData() || this.getCachedResumeData();
         this.resumeLoadError = false;
         this.hudState = {
             floorLevel: '1',
@@ -80,11 +80,6 @@ class Game {
             this.updateAimRing();
         });
 
-        this.canvas.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
-            this.shootGun(event);
-        });
-
         this.canvas.addEventListener('mousedown', (event) => {
             if (event.button === 0) {
                 this.swingHammer(event);
@@ -109,7 +104,7 @@ class Game {
     async loadResumeData() {
         try {
             const response = await fetch('resume.json');
-            if (!response.ok) return;
+            if (!response.ok) throw new Error('resume.json not reachable');
             this.resumeData = await response.json();
             this.resumeLoadError = false;
             try {
@@ -118,7 +113,20 @@ class Game {
                 // Ignore storage failures (private mode / storage disabled).
             }
         } catch (_) {
+            if (!this.resumeData) {
+                this.resumeData = this.getEmbeddedResumeData() || this.getCachedResumeData();
+            }
             this.resumeLoadError = !this.resumeData;
+        }
+    }
+
+    getEmbeddedResumeData() {
+        try {
+            const node = document.getElementById('embeddedResumeData');
+            if (!node) return null;
+            return JSON.parse(node.textContent || 'null');
+        } catch (_) {
+            return null;
         }
     }
 
@@ -219,8 +227,8 @@ class Game {
     }
 
     updateResumeRect() {
-        const pageW = Math.min(980, this.worldWidth * 0.5);
-        const pageH = Math.min(980, this.worldHeight * 0.78);
+        const pageW = Math.min(760, this.worldWidth * 0.42);
+        const pageH = Math.min(1040, this.worldHeight * 0.82);
         const x = (this.worldWidth - pageW) / 2;
         const y = (this.worldHeight - pageH) / 2;
         this.resumeRect = { x, y, width: pageW, height: pageH };
@@ -563,8 +571,7 @@ class Game {
         this.ctx.font = '13px Comic Sans MS';
         this.ctx.fillText('Move: Follow cursor', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 146);
         this.ctx.fillText('Left Click: Hammer', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 166);
-        this.ctx.fillText('Right Click: Stun gun', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
-        this.ctx.fillText('Hotkeys: R reset, B back, P note', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 206);
+        this.ctx.fillText('Hotkeys: R reset, B back, P note', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
 
         if (this.showResumeNote) {
             const noteX = this.resumeRect.x + 60;
@@ -580,7 +587,8 @@ class Game {
             if (this.resumeData && this.resumeData.personal) {
                 const p = this.resumeData.personal;
                 this.ctx.fillText(`${p.name || ''} - ${p.title || ''}`, noteX + 18, noteY + 56);
-                this.ctx.fillText(`${p.email || ''} | ${p.phone || ''}`, noteX + 18, noteY + 78);
+                const gh = String(p.github || '').replace('https://', '');
+                this.ctx.fillText(`${p.email || ''} | ${gh}`, noteX + 18, noteY + 78);
             }
 
             const exp = this.resumeData && Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience.slice(0, 3) : [];
@@ -620,7 +628,7 @@ class Game {
         this.ctx.strokeRect(x, y, pageW, pageH);
 
         const padX = 34;
-        const top = y + 34;
+        const top = y + 56;
         const left = x + padX;
         const right = x + pageW - padX;
         const contentW = pageW - padX * 2;
@@ -628,95 +636,103 @@ class Game {
 
         this.ctx.save();
         this.ctx.beginPath();
-        this.ctx.rect(left, y + 20, contentW, pageH - 38);
+        this.ctx.rect(left, y + 14, contentW, pageH - 28);
         this.ctx.clip();
 
         if (this.resumeData && this.resumeData.personal) {
             const p = this.resumeData.personal;
 
             this.ctx.fillStyle = '#2f2921';
-            this.ctx.font = 'bold 40px Georgia';
+            this.ctx.font = 'bold 31px Georgia';
             const name = String((p.name || '').toUpperCase());
             const nameW = this.ctx.measureText(name).width;
             this.ctx.fillText(name, x + (pageW - nameW) / 2, cursorY);
-            cursorY += 38;
+            cursorY += 34;
 
-            this.ctx.font = 'bold 24px Georgia';
+            this.ctx.font = 'bold 19px Georgia';
             const title = String(p.title || 'Software Developer');
             const titleW = this.ctx.measureText(title).width;
             this.ctx.fillText(title, x + (pageW - titleW) / 2, cursorY);
-            cursorY += 30;
+            cursorY += 27;
 
-            this.ctx.font = 'italic 17px Georgia';
+            this.ctx.font = 'italic 13px Georgia';
             this.ctx.fillStyle = '#4c4336';
-            const contact = `phone: ${p.phone || ''} || ${p.email || ''}`;
+            const github = String(p.github || '').replace('https://', '');
+            const contact = `${p.email || ''} || ${github}`;
             const contactW = this.ctx.measureText(contact).width;
             this.ctx.fillText(contact, x + (pageW - contactW) / 2, cursorY);
-            cursorY += 26;
+            cursorY += 21;
 
             this.drawSectionTitle('SUMMARY', left, cursorY, contentW);
-            cursorY += 26;
-            this.ctx.font = '16px Georgia';
+            cursorY += 23;
+            this.ctx.font = '12px Georgia';
             this.ctx.fillStyle = '#4a4438';
-            cursorY = this.drawWrappedText(this.resumeData.summary || '', left, cursorY, contentW, 22, 7);
-            cursorY += 14;
+            cursorY = this.drawWrappedText(this.resumeData.summary || '', left, cursorY, contentW, 18, 6);
+            cursorY += 12;
 
             this.drawSectionTitle('TECHNICAL SKILLS', left, cursorY, contentW);
-            cursorY += 26;
-            this.ctx.font = '16px Georgia';
+            cursorY += 23;
+            this.ctx.font = '12px Georgia';
             this.ctx.fillStyle = '#4a4438';
-            const skills = Array.isArray(this.resumeData.technicalSkills) ? this.resumeData.technicalSkills.slice(0, 7) : [];
+            const skills = Array.isArray(this.resumeData.technicalSkills) ? this.resumeData.technicalSkills : [];
             for (const skill of skills) {
                 const skillLine = `${skill.label}: ${(skill.items || []).join(', ')}`;
-                cursorY = this.drawWrappedText(skillLine, left, cursorY, contentW, 21, 3);
-                cursorY += 4;
+                cursorY = this.drawWrappedText(skillLine, left, cursorY, contentW, 17, 2);
+                cursorY += 3;
+                if (cursorY > y + pageH - 340) break;
             }
-            cursorY += 10;
+            cursorY += 8;
 
             this.drawSectionTitle('WORK EXPERIENCES', left, cursorY, contentW);
-            cursorY += 28;
+            cursorY += 25;
             const jobs = Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience : [];
             for (const job of jobs) {
-                if (cursorY > y + pageH - 220) break;
+                if (cursorY > y + pageH - 180) break;
                 this.ctx.fillStyle = '#2f2a22';
-                this.ctx.font = 'bold 19px Georgia';
-                this.ctx.fillText(job.title || '', left, cursorY);
-                this.drawRightAlignedText(job.dateRange || '', right, cursorY);
-                cursorY += 24;
+                this.ctx.font = 'bold 14px Georgia';
+                const jobDate = String(job.dateRange || '');
+                const jobDateWidth = this.ctx.measureText(jobDate).width;
+                const jobTitleMaxWidth = Math.max(120, contentW - jobDateWidth - 20);
+                cursorY = this.drawWrappedText(job.title || '', left, cursorY, jobTitleMaxWidth, 17, 2);
+                this.drawRightAlignedText(jobDate, right, cursorY - 17);
+                cursorY += 3;
 
-                this.ctx.font = '17px Georgia';
+                this.ctx.font = 'italic 12px Georgia';
                 this.ctx.fillStyle = '#4c4336';
                 this.ctx.fillText(job.company || '', left, cursorY);
-                cursorY += 20;
+                cursorY += 17;
 
-                this.ctx.font = '16px Georgia';
-                const highlights = Array.isArray(job.highlights) ? job.highlights.slice(0, 4) : [];
+                this.ctx.font = '12px Georgia';
+                const highlights = Array.isArray(job.highlights) ? job.highlights.slice(0, 2) : [];
                 for (const bullet of highlights) {
-                    if (cursorY > y + pageH - 170) break;
+                    if (cursorY > y + pageH - 145) break;
                     this.ctx.fillText('•', left + 4, cursorY);
-                    cursorY = this.drawWrappedText(bullet, left + 24, cursorY, contentW - 24, 20, 2);
+                    cursorY = this.drawWrappedText(bullet, left + 18, cursorY, contentW - 18, 17, 2);
                     cursorY += 2;
                 }
-                cursorY += 10;
+                cursorY += 7;
             }
 
-            if (cursorY < y + pageH - 140) {
+            if (cursorY < y + pageH - 90) {
                 this.drawSectionTitle('EDUCATION', left, cursorY, contentW);
-                cursorY += 26;
-                this.ctx.font = '16px Georgia';
+                cursorY += 23;
+                this.ctx.font = '12px Georgia';
                 this.ctx.fillStyle = '#4a4438';
                 const edu = Array.isArray(this.resumeData.education) ? this.resumeData.education : [];
                 for (const item of edu) {
-                    if (cursorY > y + pageH - 80) break;
-                    this.ctx.font = 'bold 17px Georgia';
+                    if (cursorY > y + pageH - 35) break;
+                    this.ctx.font = 'bold 12px Georgia';
                     this.ctx.fillStyle = '#2f2a22';
-                    this.ctx.fillText(item.degree || '', left, cursorY);
-                    this.drawRightAlignedText(item.dateRange || '', right, cursorY);
-                    cursorY += 22;
-                    this.ctx.font = '16px Georgia';
+                    const eduDate = String(item.dateRange || '');
+                    const eduDateWidth = this.ctx.measureText(eduDate).width;
+                    const eduTitleMaxWidth = Math.max(120, contentW - eduDateWidth - 18);
+                    cursorY = this.drawWrappedText(item.degree || '', left, cursorY, eduTitleMaxWidth, 16, 2);
+                    this.drawRightAlignedText(eduDate, right, cursorY - 16);
+                    cursorY += 2;
+                    this.ctx.font = '12px Georgia';
                     this.ctx.fillStyle = '#4a4438';
-                    cursorY = this.drawWrappedText(item.institution || '', left, cursorY, contentW, 20, 2);
-                    cursorY += 8;
+                    cursorY = this.drawWrappedText(item.institution || '', left, cursorY, contentW, 16, 2);
+                    cursorY += 6;
                 }
             }
         } else {

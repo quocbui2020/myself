@@ -2,8 +2,8 @@
   "personal": {
     "name": "QUOC NGOC BUI",
     "title": "Software Developer",
-    "phone": "507-606-9253",
-    "email": "quocbui824@gmail.com"
+    "email": "quocbui824@gmail.com",
+    "github": "https://github.com/quocbui2020"
   },
   "summary": "Software Developer with 4+ years of hands-on experience developing and maintaining web applications. Experienced with C#, .NET Framework, .NET Core, Angular, React, TypeScript, and T-SQL. Strong background in production environments and application development lifecycle. Go-to person for payment gateway implementation and critical system issues. Seeking to apply expertise in modernizing and supporting core application platforms.",
   "technicalSkills": [

@@ -29,8 +29,8 @@
         header {
             background: white;
             border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
+            padding: 22px 30px;
+            margin-bottom: 22px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
@@ -41,30 +41,71 @@
 
         .header-left {
             display: flex;
-            align-items: center;
-            gap: 20px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
             flex: 1;
-            min-width: 300px;
+            min-width: 260px;
         }
 
         .profile-pic {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
+            width: 100%;
+            max-width: 100%;
+            aspect-ratio: 1 / 1;
+            height: auto;
+            display: block;
+            border-radius: 10px;
             object-fit: cover;
-            border: 4px solid #667eea;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            border: 2px solid rgba(102, 126, 234, 0.45);
+            box-shadow: 0 12px 26px rgba(50, 64, 145, 0.25);
         }
 
         .header-info h1 {
-            font-size: 28px;
+            font-size: 34px;
             color: #667eea;
             margin-bottom: 5px;
+            line-height: 1.1;
         }
 
         .header-info p {
             color: #666;
-            font-size: 14px;
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .hero-layout {
+            display: block;
+            margin-bottom: 28px;
+        }
+
+        .hero-card {
+            background: white;
+            border-radius: 12px;
+            padding: 22px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .hero-photo {
+            flex: 0 0 40%;
+            max-width: 40%;
+            overflow: hidden;
+        }
+
+        .about-content {
+            margin: 0;
+            flex: 0 0 60%;
+            max-width: 60%;
+            min-width: 0;
+        }
+
+        .about-content h2 {
+            color: #667eea;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
         }
 
         .header-nav {
@@ -104,7 +145,7 @@
         /* Main Content */
         .content-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 30px;
             margin-bottom: 30px;
         }
@@ -220,12 +261,33 @@
             }
 
             .header-left {
-                flex-direction: column;
+                align-items: center;
                 width: 100%;
             }
 
             .header-info h1 {
                 font-size: 24px;
+            }
+
+            .hero-layout {
+                margin-bottom: 20px;
+            }
+
+            .hero-card {
+                display: block;
+                padding: 16px;
+            }
+
+            .hero-photo,
+            .about-content {
+                max-width: 100%;
+            }
+
+            .profile-pic {
+                width: min(92vw, 62vh);
+                height: min(92vw, 62vh);
+                margin: 0 auto 14px;
+                display: block;
             }
 
             .content-grid {
@@ -260,8 +322,8 @@
             }
 
             .profile-pic {
-                width: 80px;
-                height: 80px;
+                width: min(92vw, 52vh);
+                height: min(92vw, 52vh);
             }
 
             .header-info h1 {
@@ -302,7 +364,6 @@
     <div class="container">
         <header>
             <div class="header-left">
-                <img src="quoc.jpg" alt="Profile Picture" class="profile-pic" onerror="this.style.display='none'">
                 <div class="header-info">
                     <h1 id="personName">Quoc Bui</h1>
                     <p id="personTitle">Full Stack Developer</p>
@@ -315,12 +376,19 @@
             </div>
         </header>
 
-        <div class="content-grid">
-            <div class="card">
-                <h2>About Me</h2>
-                <p class="about-text" id="aboutText">Loading...</p>
+        <div class="hero-layout">
+            <div class="hero-card">
+                <div class="hero-photo">
+                    <img src="images/quoc.jpg" alt="Profile Picture" class="profile-pic" onerror="this.style.display='none'">
+                </div>
+                <div class="about-content">
+                    <h2>About Me</h2>
+                    <p class="about-text" id="aboutText">Loading...</p>
+                </div>
             </div>
+        </div>
 
+        <div class="content-grid">
             <div class="card" id="contact">
                 <h2>Contact</h2>
                 <div class="contact-info">
@@ -329,12 +397,8 @@
                         <span id="personEmail">-</span>
                     </div>
                     <div class="contact-item">
-                        <strong>Phone:</strong>
-                        <span id="personPhone">-</span>
-                    </div>
-                    <div class="contact-item">
-                        <strong>Location:</strong>
-                        <span id="personLocation">-</span>
+                        <strong>GitHub:</strong>
+                        <a id="personGithub" href="#" target="_blank" rel="noopener noreferrer">-</a>
                     </div>
                 </div>
             </div>
@@ -369,39 +433,242 @@
         </div>
     </div>
 
-    <script>
+        <script id="embeddedResumeData" type="application/json">
+{
+    "personal": {
+        "name": "QUOC NGOC BUI",
+        "title": "Software Developer",
+        "email": "quocbui824@gmail.com",
+        "github": "https://github.com/quocbui2020"
+    },
+    "summary": "Software Developer with 4+ years of hands-on experience developing and maintaining web applications. Experienced with C#, .NET Framework, .NET Core, Angular, React, TypeScript, and T-SQL. Strong background in production environments and application development lifecycle. Go-to person for payment gateway implementation and critical system issues. Seeking to apply expertise in modernizing and supporting core application platforms.",
+    "technicalSkills": [
+        {
+            "label": "Languages & Frameworks",
+            "items": [
+                "C#",
+                ".NET Framework",
+                ".NET Core",
+                ".NET 8",
+                "ASP.NET",
+                "TypeScript",
+                "JavaScript",
+                "Python",
+                "SQL",
+                "HTML/CSS",
+                "C++"
+            ]
+        },
+        {
+            "label": "Databases & Data Services",
+            "items": [
+                "T-SQL",
+                "SQL Server",
+                "Microsoft SQL Server",
+                "Entity Framework",
+                "Dapper",
+                "Relational Databases"
+            ]
+        },
+        {
+            "label": "Cloud & DevOps",
+            "items": [
+                "Microsoft Azure",
+                "Azure DevOps",
+                "Azure Pipelines"
+            ]
+        },
+        {
+            "label": "Web Technologies",
+            "items": [
+                "AngularJS",
+                "React",
+                "RESTful APIs",
+                "JSON",
+                "Swagger"
+            ]
+        },
+        {
+            "label": "Tools & Practices",
+            "items": [
+                "Git",
+                "Azure DevOps",
+                "Microsoft Visual Studio",
+                "Postman",
+                "CI/CD",
+                "Agile",
+                "Unit Testing",
+                "Integration Testing"
+            ]
+        },
+        {
+            "label": "Certifications",
+            "items": [
+                "Microsoft Certified: Azure Fundamentals (AZ-900)"
+            ]
+        },
+        {
+            "label": "Other Skills",
+            "items": [
+                "Agile Methodology",
+                "SDLC",
+                "Copilot AI for coding",
+                "Code Rabbit AI for PR reviewing"
+            ]
+        }
+    ],
+    "workExperience": [
+        {
+            "title": "Software Developer",
+            "company": "ImageTrend, LLC.",
+            "dateRange": "Current",
+            "highlights": [
+                "Owned end-to-end design, development, architecture and maintenance of payment gateway platform integrating 22+ payment integrations across C#/.NET stack.",
+                "Led Payment Gateway Framework project - designed and developed secure payment integrations for multiple payment services.",
+                "Architected and delivered .NET 8 migration for legacy systems, including assisting senior developer on full CI/CD pipeline remediation across Azure DevOps.",
+                "Implemented JWT, OAuth, and AES encryption to protect sensitive payment data and prevent security vulnerabilities in production.",
+                "Maintained unit and integration test suites under Agile sprints using Azure DevOps, ensuring production code quality.",
+                "Designed and documented REST APIs serves as the integration layer between payment data sources and application layers.",
+                "Collaborated with clients to gather and clarify requirements.",
+                "Supported production environments and resolved critical application issues.",
+                "Built and maintained web frontend features using React, TypeScript, and AngularJS for production enterprise applications."
+            ]
+        },
+        {
+            "title": "Cybersecurity Analyst / Vulnerability Assessment and Penetration Testing Assistant",
+            "company": "Metropolitan State University",
+            "dateRange": "October 2022 - June 2023",
+            "highlights": [
+                "Performed penetration testing and vulnerability assessments for a contractor, applying security analysis across networked systems and applications."
+            ]
+        },
+        {
+            "title": "Application Developer",
+            "company": "Normandale Community College",
+            "dateRange": "August 2021 - June 2022",
+            "highlights": [
+                "Developed WinForms applications with C# .NET Framework using Microsoft Visual Studio.",
+                "Designed and executed complex SQL queries using Microsoft SQL Server.",
+                "Developed RESTful APIs and JSON data structures using .NET framework for client-server communication."
+            ]
+        }
+    ],
+    "education": [
+        {
+            "degree": "Online Doctor of Philosophy (PhD) Student in Computer Science",
+            "institution": "Bagley College of Engineering, Mississippi State University, Starkville, MS.",
+            "dateRange": "Current",
+            "highlights": [
+                "Areas of Focus: Software Engineering, Machine Learning, Requirement Engineering and Software Security.",
+                "3+ years building Python-based data processing pipelines for collecting, transforming, and integrating structured data from multiple sources to support automated analysis workflows."
+            ]
+        },
+        {
+            "degree": "Master of Science in Cyber Operations, 4.0",
+            "institution": "Computer Science and Cybersecurity, Metropolitan State University, St. Paul, MN.",
+            "dateRange": "December 2022",
+            "highlights": []
+        },
+        {
+            "degree": "Bachelor of Computer Engineering",
+            "institution": "College of Science and Engineering, University of Minnesota, Twin Cities, Minneapolis, MN.",
+            "dateRange": "August 2020",
+            "highlights": []
+        }
+    ]
+}
+        </script>
+
+        <script>
         // Load resume data from JSON
+                function getEmbeddedResumeData() {
+                        const node = document.getElementById('embeddedResumeData');
+                        if (!node) return null;
+                        try {
+                                return JSON.parse(node.textContent);
+                        } catch (_) {
+                                return null;
+                        }
+                }
+
         async function loadResume() {
             try {
                 const response = await fetch('resume.json');
+                if (!response.ok) {
+                    throw new Error(`Failed to load resume.json (${response.status})`);
+                }
                 const data = await response.json();
                 renderResume(data);
             } catch (error) {
-                console.error('Error loading resume:', error);
+                                const embedded = getEmbeddedResumeData();
+                                if (embedded) {
+                                        renderResume(embedded);
+                                        return;
+                                }
+                                console.error('Error loading resume:', error);
             }
         }
 
         function renderResume(data) {
+            const personal = data.personal || {};
+            const summary = data.summary || personal.about || 'No summary available.';
+            const skills = Array.isArray(data.technicalSkills)
+                ? data.technicalSkills.map((s) => ({ category: s.label, items: s.items || [] }))
+                : Array.isArray(data.skills)
+                ? data.skills.map((s) => ({ category: s.category, items: s.items || [] }))
+                : [];
+
+            const experiences = Array.isArray(data.workExperience)
+                ? data.workExperience.map((exp) => ({
+                    title: exp.title || '',
+                    company: exp.company || '',
+                    duration: exp.dateRange || '',
+                    description: Array.isArray(exp.highlights) ? exp.highlights.join(' ') : (exp.description || '')
+                }))
+                : Array.isArray(data.experience)
+                ? data.experience.map((exp) => ({
+                    title: exp.title || '',
+                    company: exp.company || '',
+                    duration: exp.duration || '',
+                    description: exp.description || ''
+                }))
+                : [];
+
+            const projects = Array.isArray(data.projects) ? data.projects : [];
+
+            const education = Array.isArray(data.education)
+                ? data.education.map((edu) => ({
+                    degree: edu.degree || '',
+                    school: edu.institution || edu.school || '',
+                    year: edu.dateRange || edu.year || '',
+                    field: Array.isArray(edu.highlights) && edu.highlights.length
+                        ? edu.highlights.join(' ')
+                        : (edu.field || '')
+                }))
+                : [];
+
             // Personal info
-            document.getElementById('personName').textContent = data.personal.name;
-            document.getElementById('personTitle').textContent = data.personal.title;
-            document.getElementById('aboutText').textContent = data.personal.about;
-            document.getElementById('personEmail').textContent = data.personal.email;
-            document.getElementById('personPhone').textContent = data.personal.phone;
-            document.getElementById('personLocation').textContent = data.personal.location;
+            document.getElementById('personName').textContent = personal.name || 'N/A';
+            document.getElementById('personTitle').textContent = personal.title || 'N/A';
+            document.getElementById('aboutText').textContent = summary;
+            document.getElementById('personEmail').textContent = personal.email || '-';
+            const githubLink = document.getElementById('personGithub');
+            const github = personal.github || '-';
+            githubLink.textContent = github;
+            githubLink.href = personal.github || '#';
 
             // Skills
             const skillsContainer = document.getElementById('skillsContainer');
-            skillsContainer.innerHTML = data.skills.map(skillGroup => `
+            skillsContainer.innerHTML = skills.map(skillGroup => `
                 <div class="skill-group">
                     <h3>${skillGroup.category}</h3>
-                    ${skillGroup.items.map(item => `<div class="skill-item">${item}</div>`).join('')}
+                    ${(skillGroup.items || []).map(item => `<div class="skill-item">${item}</div>`).join('')}
                 </div>
-            `).join('');
+            `).join('') || '<div class="empty-state">No skills listed</div>';
 
             // Experience
             const experienceContainer = document.getElementById('experienceContainer');
-            experienceContainer.innerHTML = data.experience.map(exp => `
+            experienceContainer.innerHTML = experiences.map(exp => `
                 <div class="experience-item">
                     <h3>${exp.title}</h3>
                     <div class="meta">${exp.company} • ${exp.duration}</div>
@@ -411,7 +678,7 @@
 
             // Projects
             const projectsContainer = document.getElementById('projectsContainer');
-            projectsContainer.innerHTML = data.projects.map(proj => `
+            projectsContainer.innerHTML = projects.map(proj => `
                 <div class="project-item">
                     <h3>${proj.name}</h3>
                     <div class="description">${proj.description}</div>
@@ -420,7 +687,7 @@
 
             // Education
             const educationContainer = document.getElementById('educationContainer');
-            educationContainer.innerHTML = data.education.map(edu => `
+            educationContainer.innerHTML = education.map(edu => `
                 <div class="education-item">
                     <h3>${edu.degree}</h3>
                     <div class="meta">${edu.school} • ${edu.year}</div>
