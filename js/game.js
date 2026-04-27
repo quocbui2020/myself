@@ -192,10 +192,10 @@ class Game {
                         const deltaX = this.touchState.currentX - this.touchState.startX;
                         
                         // Apply vertical scroll (Y axis)
-                        this.preStartWheelOffsetY -= deltaY * 0.65; // faster pre-start swipe
+                        this.preStartWheelOffsetY -= deltaY * 0.75; // faster pre-start swipe
                         
                         // Apply horizontal scroll (X axis)
-                        this.preStartWheelOffsetX -= deltaX * 0.65; // faster pre-start swipe
+                        this.preStartWheelOffsetX -= deltaX * 0.75; // faster pre-start swipe
                         
                         const maxCameraX = Math.max(0, this.worldWidth - this.width);
                         const maxCameraY = Math.max(0, this.worldHeight - this.height);
