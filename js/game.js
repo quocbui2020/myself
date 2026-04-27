@@ -48,7 +48,7 @@ class Game {
             progressPct: 0,
             resumeHpText: '100%',
             resumeHpPct: 100,
-            status: 'Review the resume first, then accept the quest on the yellow note.'
+            status: 'Review the resume first, then click or tap the yellow button to accept the quest.'
         };
 
         this.deskImage = new Image();
@@ -58,6 +58,17 @@ class Game {
         };
         this.deskImage.src = 'images/desk-texture.svg';
         this.loadResumeData();
+
+        // Touch tracking for swipe and pinch gestures
+        this.touchState = {
+            startX: 0,
+            startY: 0,
+            currentX: 0,
+            currentY: 0,
+            isActive: false,
+            touchCount: 0,
+            lastDistance: 0
+        };
 
         this.particles = new ParticleSystem();
 
@@ -106,6 +117,104 @@ class Game {
             if (this.gameStarted) return;
             event.preventDefault();
             this.preStartWheelOffsetY += event.deltaY;
+        }, { passive: false });
+
+        // Touch events for mobile controls
+        this.canvas.addEventListener('touchstart', (event) => {
+            event.preventDefault();
+            if (event.touches.length > 0) {
+                const touch = event.touches[0];
+                const rect = this.canvas.getBoundingClientRect();
+                this.touchState.startX = touch.clientX - rect.left;
+                this.touchState.startY = touch.clientY - rect.top;
+                this.touchState.currentX = this.touchState.startX;
+                this.touchState.currentY = this.touchState.startY;
+                this.touchState.isActive = true;
+                this.touchState.touchCount = event.touches.length;
+                
+                // For 2-finger pinch, record initial distance
+                if (event.touches.length === 2) {
+                    const touch2 = event.touches[1];
+                    const x2 = touch2.clientX - rect.left;
+                    const y2 = touch2.clientY - rect.top;
+                    this.touchState.lastDistance = Math.hypot(
+                        this.touchState.startX - x2,
+                        this.touchState.startY - y2
+                    );
+                }
+
+                // Check for quest button tap (pre-game)
+                if (!this.gameStarted && this.acceptButtonRect) {
+                    const worldPos = this.screenToWorld(this.touchState.startX, this.touchState.startY);
+                    if (this.isPointInRect(worldPos, this.acceptButtonRect)) {
+                        this.startGame();
+                        return;
+                    }
+                }
+
+                // Hammer attack on tap (in-game)
+                if (this.gameStarted && event.touches.length === 1) {
+                    const now = performance.now();
+                    if (now - this.lastHammerTime >= this.hammerCooldownMs) {
+                        const worldPos = this.screenToWorld(this.touchState.startX, this.touchState.startY);
+                        this.swingHammerAt(worldPos.x, worldPos.y);
+                    }
+                }
+            }
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchmove', (event) => {
+            event.preventDefault();
+            if (event.touches.length > 0) {
+                const rect = this.canvas.getBoundingClientRect();
+                const touch = event.touches[0];
+                this.touchState.currentX = touch.clientX - rect.left;
+                this.touchState.currentY = touch.clientY - rect.top;
+                this.touchState.touchCount = event.touches.length;
+
+                // Handle swipe movement (single touch)
+                if (event.touches.length === 1) {
+                    const worldPos = this.screenToWorld(this.touchState.currentX, this.touchState.currentY);
+                    this.player.setTarget(worldPos.x, worldPos.y);
+                    this.mouseX = this.touchState.currentX;
+                    this.mouseY = this.touchState.currentY;
+                    this.updateAimRing();
+                }
+                
+                // Handle pinch zoom (two fingers)
+                if (event.touches.length === 2) {
+                    const touch2 = event.touches[1];
+                    const x2 = touch2.clientX - rect.left;
+                    const y2 = touch2.clientY - rect.top;
+                    const currentDistance = Math.hypot(
+                        this.touchState.currentX - x2,
+                        this.touchState.currentY - y2
+                    );
+
+                    if (this.touchState.lastDistance > 0) {
+                        const deltaDist = currentDistance - this.touchState.lastDistance;
+                        const sensitivity = 2; // Adjust for zoom speed
+                        
+                        if (!this.gameStarted) {
+                            // Pre-game: use pinch to scroll resume
+                            this.preStartWheelOffsetY -= deltaDist * sensitivity;
+                            const maxCameraY = Math.max(0, this.worldHeight - this.height);
+                            this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
+                        } else {
+                            // In-game: pinch could zoom camera (future enhancement)
+                            // For now, just track it
+                        }
+                    }
+                    this.touchState.lastDistance = currentDistance;
+                }
+            }
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchend', (event) => {
+            event.preventDefault();
+            this.touchState.isActive = false;
+            this.touchState.touchCount = 0;
+            this.touchState.lastDistance = 0;
         }, { passive: false });
 
         window.addEventListener('keydown', (event) => {
@@ -366,6 +475,41 @@ class Game {
         const center = this.player.getCenter();
         const dirX = worldPos.x - center.x;
         const dirY = worldPos.y - center.y;
+        const dirLen = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
+        const impactX = center.x + (dirX / dirLen) * 60;
+        const impactY = center.y + (dirY / dirLen) * 60;
+
+        this.addCrack(impactX, impactY);
+        this.particles.createExplosion(impactX, impactY, 12, '#dbeafe');
+
+        for (let i = this.currentEnemies.length - 1; i >= 0; i--) {
+            const enemy = this.currentEnemies[i];
+            const e = enemy.getCenter();
+            const d = this.distance(impactX, impactY, e.x, e.y);
+            if (d <= this.hammerRange) {
+                const dead = enemy.applyDamage(this.hammerDamage);
+                this.particles.createDamage(e.x, e.y);
+                if (dead) {
+                    this.currentEnemies.splice(i, 1);
+                    this.defeatedThisFloor++;
+                    this.totalDefeated++;
+                    this.particles.createCatch(e.x, e.y);
+                }
+            }
+        }
+    }
+
+    swingHammerAt(worldX, worldY) {
+        const now = performance.now();
+        if (now - this.lastHammerTime < this.hammerCooldownMs) return;
+        this.lastHammerTime = now;
+
+        this.player.setTarget(worldX, worldY);
+        this.player.triggerHammer();
+
+        const center = this.player.getCenter();
+        const dirX = worldX - center.x;
+        const dirY = worldY - center.y;
         const dirLen = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
         const impactX = center.x + (dirX / dirLen) * 60;
         const impactY = center.y + (dirY / dirLen) * 60;
@@ -740,9 +884,9 @@ class Game {
             this.ctx.font = 'bold 16px Comic Sans MS';
             this.ctx.fillText('Instructions', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 120);
             this.ctx.font = '13px Comic Sans MS';
-            this.ctx.fillText('Move: Follow cursor', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 146);
-            this.ctx.fillText('Left Click: Hammer', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 166);
-            this.ctx.fillText('Hotkeys: R reset, B back', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
+            this.ctx.fillText('Move: Cursor / Touch', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 146);
+            this.ctx.fillText('Attack: Click / Tap', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 166);
+            this.ctx.fillText('R: Reset, B: Back', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
         }
     }
 
