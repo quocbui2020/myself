@@ -38,7 +38,6 @@ class Game {
         this.stunMs = 2200;
         this.resumeHealth = 100;
         this.resumeRect = { x: 0, y: 0, width: 0, height: 0 };
-        this.showResumeNote = false;
         this.gameStarted = false;
         this.acceptButtonRect = null;
         this.resumeData = this.getEmbeddedResumeData() || this.getCachedResumeData();
@@ -102,6 +101,8 @@ class Game {
         });
 
         this.canvas.addEventListener('wheel', (event) => {
+            // Preserve browser zoom shortcuts (Ctrl + wheel).
+            if (event.ctrlKey) return;
             if (this.gameStarted) return;
             event.preventDefault();
             this.preStartWheelOffsetY += event.deltaY;
@@ -115,9 +116,6 @@ class Game {
             } else if (key === 'b') {
                 event.preventDefault();
                 window.history.back();
-            } else if (key === 'p') {
-                event.preventDefault();
-                this.showResumeNote = !this.showResumeNote;
             }
         });
     }
@@ -692,9 +690,9 @@ class Game {
         this.ctx.fillStyle = '#4b3a20';
         if (!this.gameStarted) {
             this.ctx.font = 'bold 16px Comic Sans MS';
-            this.ctx.fillText('A Request From Your Resume', leftX + 14, topY + 30);
+            this.ctx.fillText('Resume Defense Mission', leftX + 14, topY + 30);
             this.ctx.font = '12px Comic Sans MS';
-            const questText = 'I need a brave knight like you to protect my resume from evil resume-eating bugs. My career prospects depend on this. Will you accept the task?';
+            const questText = 'I need a brave hero like you to protect my resume from evil resume-eating bugs. My career prospects depend on this. Will you accept the task?';
             let questY = topY + 50;
             const questLines = this.getWrappedLines(questText, 232);
             for (let i = 0; i < questLines.length && i < 6; i++) {
@@ -744,36 +742,7 @@ class Game {
             this.ctx.font = '13px Comic Sans MS';
             this.ctx.fillText('Move: Follow cursor', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 146);
             this.ctx.fillText('Left Click: Hammer', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 166);
-            this.ctx.fillText('Hotkeys: R reset, B back, P note', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
-        }
-
-        if (this.showResumeNote) {
-            const noteX = this.resumeRect.x + 60;
-            const noteY = this.resumeRect.y + this.resumeRect.height - 300;
-            const noteW = 520;
-            const noteH = 250;
-            this.drawStickyNote(noteX, noteY, noteW, noteH, '#ffe9d5', 0.02);
-            this.ctx.fillStyle = '#4d3a28';
-            this.ctx.font = 'bold 17px Comic Sans MS';
-            this.ctx.fillText('Resume Snapshot (P to toggle)', noteX + 18, noteY + 30);
-            this.ctx.font = '14px Comic Sans MS';
-
-            if (this.resumeData && this.resumeData.personal) {
-                const p = this.resumeData.personal;
-                this.ctx.fillText(`${p.name || ''} - ${p.title || ''}`, noteX + 18, noteY + 56);
-                const gh = String(p.github || '').replace('https://', '');
-                const li = String((p.linkedin || '').replace('https://www.', '').replace('https://', ''));
-                this.ctx.fillText(`${p.email || ''} | ${gh} | ${li}`, noteX + 18, noteY + 78);
-            }
-
-            const exp = this.resumeData && Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience.slice(0, 3) : [];
-            let y = noteY + 106;
-            for (const item of exp) {
-                this.ctx.fillText(`- ${item.title} @ ${item.company}`, noteX + 18, y);
-                y += 22;
-            }
-            this.ctx.fillStyle = '#6b5845';
-            this.ctx.fillText(this.hudState.status, noteX + 18, noteY + noteH - 18);
+            this.ctx.fillText('Hotkeys: R reset, B back', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
         }
     }
 
@@ -843,7 +812,7 @@ class Game {
             this.ctx.font = '12px Georgia';
             this.ctx.fillStyle = '#4a4438';
             cursorY = this.drawWrappedText(this.resumeData.summary || '', left, cursorY, contentW, 17, 4);
-            cursorY += 8;
+            cursorY += 14;
 
             this.drawSectionTitle('TECHNICAL SKILLS', left, cursorY, contentW);
             cursorY += 23;
@@ -853,14 +822,15 @@ class Game {
                 cursorY += 4;
                 if (cursorY > y + pageH - 520) break;
             }
-            cursorY += 8;
+            cursorY += 14;
 
             this.drawSectionTitle('WORK EXPERIENCES', left, cursorY, contentW);
             cursorY += 25;
             const jobs = Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience : [];
+            const educationReserve = 260;
             for (let jobIndex = 0; jobIndex < jobs.length; jobIndex++) {
                 const job = jobs[jobIndex];
-                if (cursorY > y + pageH - 180) break;
+                if (cursorY > y + pageH - educationReserve) break;
                 this.ctx.fillStyle = '#2f2a22';
                 this.ctx.font = 'bold 14px Georgia';
                 const jobDate = String(job.dateRange || '');
@@ -877,26 +847,28 @@ class Game {
 
                 this.ctx.font = '12px Georgia';
                 const highlights = Array.isArray(job.highlights) ? job.highlights : [];
-                const maxBullets = jobIndex === 0 ? highlights.length : 1;
-                for (const bullet of highlights) {
-                    if (maxBullets <= 0) break;
-                    if (cursorY > y + pageH - 145) break;
+                // Preserve the strongest first-role impact while ensuring later roles
+                // still show representative bullet details.
+                const maxBullets = jobIndex === 0 ? 3 : (jobIndex === 1 ? 1 : 3);
+                for (let b = 0; b < highlights.length && b < maxBullets; b++) {
+                    const bullet = highlights[b];
+                    if (cursorY > y + pageH - educationReserve + 30) break;
                     this.ctx.fillText('•', left + 4, cursorY);
-                    cursorY = this.drawWrappedText(bullet, left + 18, cursorY, contentW - 18, 16, 3);
+                    cursorY = this.drawWrappedText(bullet, left + 18, cursorY, contentW - 18, 16, 2);
                     cursorY += 1;
-                    if (jobIndex > 0) break;
                 }
                 cursorY += 5;
             }
 
-            if (cursorY < y + pageH - 90) {
+            if (cursorY < y + pageH - 120) {
+                cursorY += 10;
                 this.drawSectionTitle('EDUCATION', left, cursorY, contentW);
                 cursorY += 23;
                 this.ctx.font = '12px Georgia';
                 this.ctx.fillStyle = '#4a4438';
                 const edu = Array.isArray(this.resumeData.education) ? this.resumeData.education : [];
                 for (const item of edu) {
-                    if (cursorY > y + pageH - 35) break;
+                    if (cursorY > y + pageH - 55) break;
                     this.ctx.font = 'bold 12px Georgia';
                     this.ctx.fillStyle = '#2f2a22';
                     const eduDate = String(item.dateRange || '');
@@ -908,7 +880,21 @@ class Game {
                     this.ctx.font = '12px Georgia';
                     this.ctx.fillStyle = '#4a4438';
                     cursorY = this.drawWrappedText(item.institution || '', left, cursorY, contentW, 16, 2);
-                    cursorY += 6;
+
+                    const eduHighlights = Array.isArray(item.highlights) ? item.highlights.slice(0, 2) : [];
+                    if (eduHighlights.length > 0) {
+                        cursorY += 2;
+                        this.ctx.font = '12px Georgia';
+                        this.ctx.fillStyle = '#4a4438';
+                        for (const bullet of eduHighlights) {
+                            if (cursorY > y + pageH - 35) break;
+                            this.ctx.fillText('•', left + 4, cursorY);
+                            cursorY = this.drawWrappedText(bullet, left + 18, cursorY, contentW - 18, 16, 2);
+                            cursorY += 2;
+                        }
+                    }
+
+                    cursorY += 8;
                 }
             }
         } else {
