@@ -197,7 +197,8 @@ class Game {
                         
                         if (!this.gameStarted) {
                             // Pre-game: use pinch to scroll resume
-                            this.preStartWheelOffsetY -= deltaDist * sensitivity;
+                            // Pinch in (closer) scrolls up, pinch out (apart) scrolls down
+                            this.preStartWheelOffsetY += deltaDist * sensitivity;
                             const maxCameraY = Math.max(0, this.worldHeight - this.height);
                             this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
                         } else {
