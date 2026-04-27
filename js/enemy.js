@@ -9,7 +9,8 @@ class Enemy {
         this.width = this.isBoss ? 74 : 50;
         this.height = this.isBoss ? 74 : 50;
 
-        this.baseSpeed = (this.isBoss ? 2.1 : 2.7) + this.upgradeTier * 0.2;
+        const regularBaseSpeed = 2.7 + this.upgradeTier * 0.2;
+        this.baseSpeed = this.isBoss ? regularBaseSpeed * 1.5 : regularBaseSpeed;
         this.speed = this.baseSpeed;
         this.vx = 0;
         this.vy = 0;
