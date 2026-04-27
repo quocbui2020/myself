@@ -102,7 +102,8 @@ class Game {
                 const pos = this.getMousePosition(event);
                 const worldPos = this.screenToWorld(pos.x, pos.y);
 
-                if (!this.gameStarted && this.acceptButtonRect && this.isPointInRect(worldPos, this.acceptButtonRect)) {
+                const acceptRect = this.acceptButtonRect || this.getAcceptButtonRect();
+                if (!this.gameStarted && acceptRect && this.isPointInRect(worldPos, acceptRect)) {
                     this.startGame();
                     return;
                 }
@@ -146,9 +147,11 @@ class Game {
                 }
 
                 // Check for quest button tap (pre-game)
-                if (!this.gameStarted && this.acceptButtonRect) {
+                const acceptRect = this.acceptButtonRect || this.getAcceptButtonRect();
+                if (!this.gameStarted && acceptRect) {
                     const worldPos = this.screenToWorld(this.touchState.startX, this.touchState.startY);
-                    if (this.isPointInRect(worldPos, this.acceptButtonRect)) {
+                    // Slightly larger tap target on mobile for better reliability.
+                    if (this.isPointInRect(worldPos, this.expandRect(acceptRect, 18))) {
                         this.startGame();
                         return;
                     }
@@ -211,12 +214,15 @@ class Game {
                 
                 // Handle pinch zoom (two fingers)
                 if (event.touches.length === 2) {
-                    const touch2 = event.touches[1];
-                    const x2 = touch2.clientX - rect.left;
-                    const y2 = touch2.clientY - rect.top;
+                    const touchA = event.touches[0];
+                    const touchB = event.touches[1];
+                    const x1 = touchA.clientX - rect.left;
+                    const y1 = touchA.clientY - rect.top;
+                    const x2 = touchB.clientX - rect.left;
+                    const y2 = touchB.clientY - rect.top;
                     const currentDistance = Math.hypot(
-                        this.touchState.currentX - x2,
-                        this.touchState.currentY - y2
+                        x1 - x2,
+                        y1 - y2
                     );
 
                     if (this.touchState.lastDistance === 0) {
@@ -225,7 +231,7 @@ class Game {
                     } else {
                         // Subsequent pinch: calculate delta and apply scroll
                         const deltaDist = currentDistance - this.touchState.lastDistance;
-                        const sensitivity = 0.5; // Reduced sensitivity for pinch
+                        const sensitivity = 2.2;
                         
                         if (!this.gameStarted) {
                             // Pre-game: use pinch to scroll resume
@@ -1236,6 +1242,7 @@ class Game {
     startGame() {
         if (this.gameStarted) return;
         this.gameStarted = true;
+        this.preStartWheelOffsetX = 0;
         this.preStartWheelOffsetY = 0;
         this.applyGameStartedVisualState();
         this.resumeHealth = 100;
@@ -1256,6 +1263,26 @@ class Game {
             point.y >= rect.y &&
             point.y <= rect.y + rect.height
         );
+    }
+
+    getAcceptButtonRect() {
+        const leftX = this.resumeRect.x - 290;
+        const topY = this.resumeRect.y + 80;
+        const noteCenterX = leftX + 130;
+        const buttonW = 224;
+        const buttonH = 28;
+        const buttonX = noteCenterX - buttonW / 2;
+        const buttonY = topY + 125;
+        return { x: buttonX, y: buttonY, width: buttonW, height: buttonH };
+    }
+
+    expandRect(rect, pad) {
+        return {
+            x: rect.x - pad,
+            y: rect.y - pad,
+            width: rect.width + pad * 2,
+            height: rect.height + pad * 2
+        };
     }
 
     distance(x1, y1, x2, y2) {
