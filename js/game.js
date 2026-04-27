@@ -185,13 +185,13 @@ class Game {
                         const deltaX = this.touchState.currentX - this.touchState.startX;
                         
                         // Apply vertical scroll (Y axis)
-                        this.preStartWheelOffsetY -= deltaY * 0.5; // sensitivity factor
+                        this.preStartWheelOffsetY -= deltaY * 0.15; // reduced sensitivity
                         
                         // Apply horizontal scroll (X axis)
-                        this.preStartWheelOffsetX -= deltaX * 0.5; // sensitivity factor
+                        this.preStartWheelOffsetX -= deltaX * 0.15; // reduced sensitivity
                         
                         const maxCameraX = Math.max(0, this.worldWidth - this.width);
-                        const maxCameraY = Math.max(0, this.worldHeight - this.height);
+                        const maxCameraY = Math.max(0, this.worlsdHeight - this.height);
                         this.preStartWheelOffsetX = Math.max(0, Math.min(this.preStartWheelOffsetX, maxCameraX));
                         this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
                     } else {
@@ -214,9 +214,13 @@ class Game {
                         this.touchState.currentY - y2
                     );
 
-                    if (this.touchState.lastDistance > 0) {
+                    if (this.touchState.lastDistance === 0) {
+                        // First pinch detection: initialize the baseline distance
+                        this.touchState.lastDistance = currentDistance;
+                    } else {
+                        // Subsequent pinch: calculate delta and apply scroll
                         const deltaDist = currentDistance - this.touchState.lastDistance;
-                        const sensitivity = 2; // Adjust for zoom speed
+                        const sensitivity = 0.5; // Reduced sensitivity for pinch
                         
                         if (!this.gameStarted) {
                             // Pre-game: use pinch to scroll resume
@@ -229,8 +233,8 @@ class Game {
                             // In-game: pinch could zoom camera (future enhancement)
                             // For now, just track it
                         }
+                        this.touchState.lastDistance = currentDistance;
                     }
-                    this.touchState.lastDistance = currentDistance;
                 }
             }
         }, { passive: false });
@@ -256,6 +260,11 @@ class Game {
 
     async loadResumeData() {
         try {
+            // Skip fetch for file:// protocol (CORS blocked by browser)
+            if (window.location.protocol === 'file:') {
+                throw new Error('file:// protocol - using fallback');
+            }
+            
             const response = await fetch(`resume.json?t=${Date.now()}`, { cache: 'no-store' });
             if (!response.ok) throw new Error('resume.json not reachable');
             this.resumeData = await response.json();
