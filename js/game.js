@@ -14,9 +14,57 @@ class Game {
         this.cameraDeadzoneX = 0;
         this.cameraDeadzoneY = 0;
 
+        // Centralized layout config for easy tuning of world and resume size.
+        this.layoutConfig = {
+            world: {
+                width: 2400,
+                height: 2400
+            },
+            resume: {
+                widthRatio: 0.72,
+                heightRatio: 0.94,
+                maxWidth: 1280,
+                maxHeight: 2200
+            }
+        };
+
+        // Centralized typography config so font sizes can be adjusted from game_resume.json.
+        this.resumeTypography = {
+            family: 'Georgia',
+            nameSize: 48,
+            titleSize: 30,
+            contactSize: 20,
+            sectionTitleSize: 24,
+            summarySize: 18,
+            summaryLineHeight: 26,
+            technicalSkills: {
+                labelSize: 16,
+                itemSize: 16,
+                lineHeight: 24,
+                itemGap: 6
+            },
+            workExperience: {
+                titleSize: 21,
+                titleLineHeight: 28,
+                companySize: 17,
+                highlightSize: 16,
+                highlightLineHeight: 24,
+                jobGap: 8
+            },
+            education: {
+                bodySize: 17,
+                titleSize: 21,
+                titleLineHeight: 28,
+                institutionLineHeight: 24,
+                highlightSize: 16,
+                highlightLineHeight: 24,
+                itemGap: 10
+            }
+        };
+
         // Keep world dimensions fixed regardless of browser zoom or viewport size.
-        this.fixedWorldWidth = 1600;
-        this.fixedWorldHeight = 1200;
+        this.fixedWorldWidth = this.layoutConfig.world.width;
+        this.fixedWorldHeight = this.layoutConfig.world.height;
         this.preStartWheelOffsetX = 0;
         this.preStartWheelOffsetY = 0;
         this.preStartZoom = 1;
@@ -54,8 +102,11 @@ class Game {
         this.resumeRect = { x: 0, y: 0, width: 0, height: 0 };
         this.gameStarted = false;
         this.acceptButtonRect = null;
-        this.resumeData = this.getEmbeddedResumeData() || this.getCachedResumeData();
+        this.resumeData = null;
+        this.resumeDataSource = 'none';
+        this.applyResumeLayoutOverrides();
         this.resumeLoadError = false;
+        this.resumeLoadErrorMessage = '';
         this.hudState = {
             floorLevel: '1',
             caughtCount: '--',
@@ -387,45 +438,78 @@ class Game {
 
     async loadResumeData() {
         try {
-            // Skip fetch for file:// protocol (CORS blocked by browser)
             if (window.location.protocol === 'file:') {
-                throw new Error('file:// protocol - using fallback');
+                throw new Error('Blocked by browser: file:// cannot fetch game_resume.json. Use a local HTTP server (Live Server).');
             }
-            
-            const response = await fetch(`resume.json?t=${Date.now()}`, { cache: 'no-store' });
-            if (!response.ok) throw new Error('resume.json not reachable');
+            const response = await fetch(`game_resume.json?t=${Date.now()}`, { cache: 'no-store' });
+            if (!response.ok) throw new Error('game_resume.json not reachable');
             this.resumeData = await response.json();
+            this.resumeDataSource = 'game_resume.json';
+            this.applyResumeLayoutOverrides();
+            this.applyResumeTypographyOverrides();
             this.resumeLoadError = false;
-            try {
-                localStorage.setItem('resumeDataCache', JSON.stringify(this.resumeData));
-            } catch (_) {
-                // Ignore storage failures (private mode / storage disabled).
-            }
-        } catch (_) {
-            if (!this.resumeData) {
-                this.resumeData = this.getEmbeddedResumeData() || this.getCachedResumeData();
-            }
-            this.resumeLoadError = !this.resumeData;
+            this.resumeLoadErrorMessage = '';
+        } catch (error) {
+            this.resumeData = null;
+            this.resumeDataSource = 'none';
+            this.resumeLoadError = true;
+            this.resumeLoadErrorMessage = error && error.message ? error.message : 'Unknown error while loading game_resume.json.';
+            console.error('Failed to load game_resume.json:', error);
         }
     }
 
-    getEmbeddedResumeData() {
-        try {
-            const node = document.getElementById('embeddedResumeData');
-            if (!node) return null;
-            return JSON.parse(node.textContent || 'null');
-        } catch (_) {
-            return null;
-        }
+    getResumeDataSourceLabel() {
+        if (this.resumeDataSource === 'game_resume.json') return 'game_resume.json';
+        return 'Unavailable';
     }
 
-    getCachedResumeData() {
-        try {
-            const raw = localStorage.getItem('resumeDataCache');
-            return raw ? JSON.parse(raw) : null;
-        } catch (_) {
-            return null;
+    applyResumeLayoutOverrides() {
+        const layout = this.resumeData && this.resumeData.resumeLayout ? this.resumeData.resumeLayout : null;
+        if (!layout) return;
+
+        const width = Number(layout.width);
+        const height = Number(layout.height);
+
+        if (Number.isFinite(width) && width > 0) {
+            this.layoutConfig.resume.maxWidth = width;
+            this.layoutConfig.resume.widthRatio = 1;
         }
+        if (Number.isFinite(height) && height > 0) {
+            this.layoutConfig.resume.maxHeight = height;
+            this.layoutConfig.resume.heightRatio = 1;
+        }
+
+        this.fixedWorldWidth = this.layoutConfig.world.width;
+        this.fixedWorldHeight = this.layoutConfig.world.height;
+        this.worldWidth = this.fixedWorldWidth;
+        this.worldHeight = this.fixedWorldHeight;
+        this.updateResumeRect();
+        this.updateCamera();
+    }
+
+    applyResumeTypographyOverrides() {
+        const typography = this.resumeData && this.resumeData.resumeTypography ? this.resumeData.resumeTypography : null;
+        if (!typography || typeof typography !== 'object') return;
+
+        const mergeTypography = (target, source) => {
+            for (const key of Object.keys(source)) {
+                const next = source[key];
+                const current = target[key];
+
+                if (
+                    next && typeof next === 'object' && !Array.isArray(next) &&
+                    current && typeof current === 'object' && !Array.isArray(current)
+                ) {
+                    mergeTypography(current, next);
+                } else if (typeof next === 'number' && Number.isFinite(next) && next > 0) {
+                    target[key] = next;
+                } else if (typeof next === 'string' && typeof current === 'string' && next.trim()) {
+                    target[key] = next.trim();
+                }
+            }
+        };
+
+        mergeTypography(this.resumeTypography, typography);
     }
 
     getMousePosition(event) {
@@ -464,8 +548,14 @@ class Game {
     resizeCanvas() {
         this.width = window.innerWidth;
         this.height = window.innerHeight;
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
+
+        // Render at device pixel ratio for crisper text and less blur.
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        this.canvas.width = Math.floor(this.width * dpr);
+        this.canvas.height = Math.floor(this.height * dpr);
+        this.canvas.style.width = `${this.width}px`;
+        this.canvas.style.height = `${this.height}px`;
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
         this.worldWidth = this.fixedWorldWidth;
         this.worldHeight = this.fixedWorldHeight;
@@ -560,8 +650,9 @@ class Game {
     }
 
     updateResumeRect() {
-        const pageW = Math.min(760, this.worldWidth * 0.52);
-        const pageH = Math.min(1040, this.worldHeight * 0.82);
+        const resumeLayout = this.layoutConfig.resume;
+        const pageW = Math.min(resumeLayout.maxWidth, this.worldWidth * resumeLayout.widthRatio);
+        const pageH = Math.min(resumeLayout.maxHeight, this.worldHeight * resumeLayout.heightRatio);
         const x = (this.worldWidth - pageW) / 2;
         const y = (this.worldHeight - pageH) / 2;
         this.resumeRect = { x, y, width: pageW, height: pageH };
@@ -1110,23 +1201,25 @@ class Game {
     }
 
     drawSectionTitle(text, x, y, width) {
+        const typo = this.resumeTypography;
         this.ctx.fillStyle = '#2b2b2b';
-        this.ctx.font = 'bold 19px Georgia';
+        this.ctx.font = `bold ${typo.sectionTitleSize}px ${typo.family}`;
         this.ctx.fillText(text, x, y);
         this.ctx.strokeStyle = 'rgba(70, 70, 70, 0.25)';
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
-        this.ctx.moveTo(x, y + 6);
-        this.ctx.lineTo(x + width, y + 6);
+        this.ctx.moveTo(x, y + 8);
+        this.ctx.lineTo(x + width, y + 8);
         this.ctx.stroke();
     }
 
     drawSkillEntry(label, items, x, y, maxWidth, lineHeight) {
+        const typo = this.resumeTypography;
         const safeLabel = String(label || '').trim();
         const itemText = Array.isArray(items) ? items.join(', ') : String(items || '');
 
         this.ctx.fillStyle = '#2f2a22';
-        this.ctx.font = 'bold 12px Georgia';
+        this.ctx.font = `bold ${typo.technicalSkills.labelSize}px ${typo.family}`;
         this.ctx.fillText(`${safeLabel}:`, x, y);
 
         // Draw underline under the skill category label for a resume-like emphasis.
@@ -1143,7 +1236,7 @@ class Game {
         const remainingLinesWidth = Math.max(80, maxWidth - 18);
 
         this.ctx.fillStyle = '#4a4438';
-        this.ctx.font = '12px Georgia';
+        this.ctx.font = `${typo.technicalSkills.itemSize}px ${typo.family}`;
 
         const words = itemText.split(/\s+/).filter(Boolean);
         let line = '';
@@ -1173,28 +1266,32 @@ class Game {
     }
 
     drawWorldNotes() {
-        const leftX = this.resumeRect.x - 290;
+        const leftNoteW = 340;
+        const leftNoteH = 230;
+        const rightNoteW = 320;
+        const rightNoteH = 230;
+        const leftX = this.resumeRect.x - (leftNoteW + 40);
         const topY = this.resumeRect.y + 80;
-        const noteCenterX = leftX + 130;
+        const noteCenterX = leftX + leftNoteW * 0.5;
 
-        this.drawStickyNote(leftX, topY, 260, 180, '#fff2a8', -0.05);
+        this.drawStickyNote(leftX, topY, leftNoteW, leftNoteH, '#fff2a8', -0.05);
         this.ctx.fillStyle = '#4b3a20';
         if (!this.gameStarted) {
-            this.ctx.font = 'bold 16px Comic Sans MS';
-            this.ctx.fillText('Resume Defense Mission', leftX + 14, topY + 30);
-            this.ctx.font = '12px Comic Sans MS';
+            this.ctx.font = 'bold 24px Georgia';
+            this.ctx.fillText('Resume Defense Mission', leftX + 18, topY + 38);
+            this.ctx.font = '16px Georgia';
             const questText = 'I need a brave hero like you to protect my resume from evil resume-eating bugs. My career prospects depend on this. Will you accept the task?';
-            let questY = topY + 50;
-            const questLines = this.getWrappedLines(questText, 232);
-            for (let i = 0; i < questLines.length && i < 6; i++) {
-                this.ctx.fillText(questLines[i], leftX + 14, questY);
-                questY += 17;
+            let questY = topY + 66;
+            const questLines = this.getWrappedLines(questText, leftNoteW - 32);
+            for (let i = 0; i < questLines.length && i < 7; i++) {
+                this.ctx.fillText(questLines[i], leftX + 18, questY);
+                questY += 20;
             }
 
-            const buttonW = 224;
-            const buttonH = 28;
+            const buttonW = leftNoteW - 36;
+            const buttonH = 34;
             const buttonX = noteCenterX - buttonW / 2;
-            const buttonY = topY + 125;
+            const buttonY = topY + 166;
             this.acceptButtonRect = { x: buttonX, y: buttonY, width: buttonW, height: buttonH };
 
             this.ctx.fillStyle = '#ffe07a';
@@ -1203,58 +1300,65 @@ class Game {
             this.ctx.lineWidth = 2;
             this.ctx.strokeRect(buttonX, buttonY, buttonW, buttonH);
             this.ctx.fillStyle = '#4b3a20';
-            this.ctx.font = 'bold 12px Comic Sans MS';
-            this.ctx.fillText('Yes, I will protect your resume', buttonX + 25, buttonY + 18);
+            this.ctx.font = 'bold 14px Georgia';
+            this.ctx.fillText('Yes, I will protect your resume', buttonX + 45, buttonY + 22);
+            this.ctx.font = '12px Georgia';
+            this.ctx.fillStyle = '#5b4d2f';
+            this.ctx.fillText(`Data: ${this.getResumeDataSourceLabel()}`, leftX + 18, topY + 215);
         } else {
             this.acceptButtonRect = null;
-            this.ctx.font = 'bold 18px Comic Sans MS';
-            this.ctx.fillText('Protect My Resume', leftX + 18, topY + 32);
-            this.ctx.font = '14px Comic Sans MS';
-            this.ctx.fillText(`Floor: ${this.hudState.floorLevel}`, leftX + 18, topY + 58);
-            this.ctx.fillText(`Bugs: ${this.hudState.caughtCount}`, leftX + 18, topY + 76);
+            this.ctx.font = 'bold 28px Georgia';
+            this.ctx.fillText('Protect My Resume', leftX + 20, topY + 42);
+            this.ctx.font = '18px Georgia';
+            this.ctx.fillText(`Floor: ${this.hudState.floorLevel}`, leftX + 20, topY + 72);
+            this.ctx.fillText(`Bugs: ${this.hudState.caughtCount}`, leftX + 20, topY + 96);
 
             // Floor progress bar (labeled)
-            this.ctx.font = '10px Comic Sans MS';
+            this.ctx.font = '13px Georgia';
             this.ctx.fillStyle = '#8c6b1a';
-            this.ctx.fillText('Floor Progress:', leftX + 18, topY + 92);
+            this.ctx.fillText('Floor Progress:', leftX + 20, topY + 116);
             this.ctx.fillStyle = '#efe1a0';
-            this.ctx.fillRect(leftX + 18, topY + 96, 220, 8);
+            this.ctx.fillRect(leftX + 20, topY + 122, leftNoteW - 40, 10);
             this.ctx.fillStyle = '#f08b4f';
-            this.ctx.fillRect(leftX + 18, topY + 96, 220 * (this.hudState.progressPct / 100), 8);
+            this.ctx.fillRect(leftX + 20, topY + 122, (leftNoteW - 40) * (this.hudState.progressPct / 100), 10);
 
             // Power bar (labeled)
-            this.ctx.font = '14px Comic Sans MS';
+            this.ctx.font = '18px Georgia';
             this.ctx.fillStyle = '#4b3a20';
-            this.ctx.fillText(`Power: ${this.hudState.manaText}`, leftX + 18, topY + 120);
+            this.ctx.fillText(`Power: ${this.hudState.manaText}`, leftX + 20, topY + 154);
             const manaFull = this.hudState.manaPct >= 100;
             this.ctx.fillStyle = manaFull ? '#aad4ff' : '#dce8ff';
-            this.ctx.fillRect(leftX + 18, topY + 125, 220, 8);
+            this.ctx.fillRect(leftX + 20, topY + 160, leftNoteW - 40, 10);
             this.ctx.fillStyle = manaFull ? '#00aaff' : '#4e9bff';
-            this.ctx.fillRect(leftX + 18, topY + 125, 220 * (this.hudState.manaPct / 100), 8);
+            this.ctx.fillRect(leftX + 20, topY + 160, (leftNoteW - 40) * (this.hudState.manaPct / 100), 10);
             if (manaFull) {
                 this.ctx.strokeStyle = '#00ccff';
                 this.ctx.lineWidth = 1;
-                this.ctx.strokeRect(leftX + 18, topY + 125, 220, 8);
-                this.ctx.font = 'bold 10px Comic Sans MS';
+                this.ctx.strokeRect(leftX + 20, topY + 160, leftNoteW - 40, 10);
+                this.ctx.font = 'bold 13px Georgia';
                 this.ctx.fillStyle = '#0077cc';
-                this.ctx.fillText('FULL - Hold to charge shockwave!', leftX + 18, topY + 148);
+                this.ctx.fillText('FULL - Hold to charge shockwave!', leftX + 20, topY + 186);
             }
+            this.ctx.font = '12px Georgia';
+            this.ctx.fillStyle = '#5b4d2f';
+            this.ctx.fillText(`Data: ${this.getResumeDataSourceLabel()}`, leftX + 20, topY + 210);
         }
 
         if (this.gameStarted) {
-            this.drawStickyNote(this.resumeRect.x + this.resumeRect.width + 34, this.resumeRect.y + 90, 240, 172, '#d8f0ff', 0.06);
+            this.drawStickyNote(this.resumeRect.x + this.resumeRect.width + 34, this.resumeRect.y + 90, rightNoteW, rightNoteH, '#d8f0ff', 0.06);
             this.ctx.fillStyle = '#2f3e49';
-            this.ctx.font = 'bold 16px Comic Sans MS';
-            this.ctx.fillText('Instructions', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 120);
-            this.ctx.font = '13px Comic Sans MS';
-            this.ctx.fillText('Move: Cursor / Touch', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 146);
-            this.ctx.fillText('Attack: Click / Tap', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 166);
-            this.ctx.fillText('Power Full: Hold, Release', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 186);
-            this.ctx.fillText('R: Reset, B: Back', this.resumeRect.x + this.resumeRect.width + 52, this.resumeRect.y + 206);
+            this.ctx.font = 'bold 24px Georgia';
+            this.ctx.fillText('Instructions', this.resumeRect.x + this.resumeRect.width + 54, this.resumeRect.y + 130);
+            this.ctx.font = '17px Georgia';
+            this.ctx.fillText('Move: Cursor / Touch', this.resumeRect.x + this.resumeRect.width + 54, this.resumeRect.y + 166);
+            this.ctx.fillText('Attack: Click / Tap', this.resumeRect.x + this.resumeRect.width + 54, this.resumeRect.y + 194);
+            this.ctx.fillText('Power Full: Hold, Release', this.resumeRect.x + this.resumeRect.width + 54, this.resumeRect.y + 222);
+            this.ctx.fillText('R: Reset, B: Back', this.resumeRect.x + this.resumeRect.width + 54, this.resumeRect.y + 250);
         }
     }
 
     drawResumeTerrain() {
+        const typo = this.resumeTypography;
         const x = this.resumeRect.x;
         const y = this.resumeRect.y;
         const pageW = this.resumeRect.width;
@@ -1295,114 +1399,150 @@ class Game {
             const p = this.resumeData.personal;
 
             this.ctx.fillStyle = '#2f2921';
-            this.ctx.font = 'bold 31px Georgia';
+            this.ctx.font = `bold ${typo.nameSize}px ${typo.family}`;
             const name = String((p.name || '').toUpperCase());
             const nameW = this.ctx.measureText(name).width;
             this.ctx.fillText(name, x + (pageW - nameW) / 2, cursorY);
-            cursorY += 34;
+            cursorY += 52;
 
-            this.ctx.font = 'bold 19px Georgia';
+            this.ctx.font = `bold ${typo.titleSize}px ${typo.family}`;
             const title = String(p.title || 'Software Developer');
             const titleW = this.ctx.measureText(title).width;
             this.ctx.fillText(title, x + (pageW - titleW) / 2, cursorY);
-            cursorY += 27;
+            cursorY += 40;
 
-            this.ctx.font = 'italic 13px Georgia';
+            this.ctx.font = `italic ${typo.contactSize}px ${typo.family}`;
             this.ctx.fillStyle = '#4c4336';
             const github = String(p.github || '').replace('https://', '');
             const contact = `${p.email || ''} || ${github}`;
             const contactW = this.ctx.measureText(contact).width;
             this.ctx.fillText(contact, x + (pageW - contactW) / 2, cursorY);
-            cursorY += 21;
+            cursorY += 34;
 
             this.drawSectionTitle('SUMMARY', left, cursorY, contentW);
-            cursorY += 23;
-            this.ctx.font = '12px Georgia';
+            cursorY += 30;
+            this.ctx.font = `${typo.summarySize}px ${typo.family}`;
             this.ctx.fillStyle = '#4a4438';
-            cursorY = this.drawWrappedText(this.resumeData.summary || '', left, cursorY, contentW, 17, 4);
-            cursorY += 14;
+            cursorY = this.drawWrappedText(this.resumeData.summary || '', left, cursorY, contentW, typo.summaryLineHeight);
+            cursorY += 20;
 
             this.drawSectionTitle('TECHNICAL SKILLS', left, cursorY, contentW);
-            cursorY += 23;
+            cursorY += 30;
             const skills = Array.isArray(this.resumeData.technicalSkills) ? this.resumeData.technicalSkills : [];
-            for (const skill of skills.slice(0, 4)) {
-                cursorY = this.drawSkillEntry(skill.label, skill.items || [], left, cursorY, contentW, 17);
-                cursorY += 4;
-                if (cursorY > y + pageH - 520) break;
+            for (const skill of skills) {
+                cursorY = this.drawSkillEntry(
+                    skill.label,
+                    skill.items || [],
+                    left,
+                    cursorY,
+                    contentW,
+                    typo.technicalSkills.lineHeight
+                );
+                cursorY += typo.technicalSkills.itemGap;
             }
-            cursorY += 14;
+            cursorY += 20;
 
             this.drawSectionTitle('WORK EXPERIENCES', left, cursorY, contentW);
-            cursorY += 25;
+            cursorY += 32;
             const jobs = Array.isArray(this.resumeData.workExperience) ? this.resumeData.workExperience : [];
-            const educationReserve = 260;
+            const educationReserve = 220;
             for (let jobIndex = 0; jobIndex < jobs.length; jobIndex++) {
                 const job = jobs[jobIndex];
                 if (cursorY > y + pageH - educationReserve) break;
                 this.ctx.fillStyle = '#2f2a22';
-                this.ctx.font = 'bold 14px Georgia';
+                this.ctx.font = `bold ${typo.workExperience.titleSize}px ${typo.family}`;
                 const jobDate = String(job.dateRange || '');
                 const jobDateWidth = this.ctx.measureText(jobDate).width;
                 const jobTitleMaxWidth = Math.max(120, contentW - jobDateWidth - 20);
-                cursorY = this.drawWrappedText(job.title || '', left, cursorY, jobTitleMaxWidth, 17, 2);
-                this.drawRightAlignedText(jobDate, right, cursorY - 17);
-                cursorY += 3;
+                cursorY = this.drawWrappedText(
+                    job.title || '',
+                    left,
+                    cursorY,
+                    jobTitleMaxWidth,
+                    typo.workExperience.titleLineHeight,
+                    2
+                );
+                this.drawRightAlignedText(jobDate, right, cursorY - typo.workExperience.titleLineHeight);
+                cursorY += 5;
 
-                this.ctx.font = 'italic 12px Georgia';
+                this.ctx.font = `italic ${typo.workExperience.companySize}px ${typo.family}`;
                 this.ctx.fillStyle = '#4c4336';
                 this.ctx.fillText(job.company || '', left, cursorY);
-                cursorY += 17;
+                cursorY += 25;
 
-                this.ctx.font = '12px Georgia';
+                this.ctx.font = `${typo.workExperience.highlightSize}px ${typo.family}`;
                 const highlights = Array.isArray(job.highlights) ? job.highlights : [];
-                // Preserve the strongest first-role impact while ensuring later roles
-                // still show representative bullet details.
-                const maxBullets = jobIndex === 0 ? 3 : (jobIndex === 1 ? 1 : 3);
-                for (let b = 0; b < highlights.length && b < maxBullets; b++) {
+                for (let b = 0; b < highlights.length; b++) {
                     const bullet = highlights[b];
-                    if (cursorY > y + pageH - educationReserve + 30) break;
+                    if (cursorY > y + pageH - educationReserve + 8) break;
                     this.ctx.fillText('•', left + 4, cursorY);
-                    cursorY = this.drawWrappedText(bullet, left + 18, cursorY, contentW - 18, 16, 2);
-                    cursorY += 1;
+                    cursorY = this.drawWrappedText(
+                        bullet,
+                        left + 22,
+                        cursorY,
+                        contentW - 22,
+                        typo.workExperience.highlightLineHeight
+                    );
+                    cursorY += 3;
                 }
-                cursorY += 5;
+                cursorY += typo.workExperience.jobGap;
             }
 
             if (cursorY < y + pageH - 120) {
                 cursorY += 10;
                 this.drawSectionTitle('EDUCATION', left, cursorY, contentW);
-                cursorY += 23;
-                this.ctx.font = '12px Georgia';
+                cursorY += 30;
+                this.ctx.font = `${typo.education.bodySize}px ${typo.family}`;
                 this.ctx.fillStyle = '#4a4438';
                 const edu = Array.isArray(this.resumeData.education) ? this.resumeData.education : [];
                 for (const item of edu) {
-                    if (cursorY > y + pageH - 55) break;
-                    this.ctx.font = 'bold 12px Georgia';
+                    if (cursorY > y + pageH - 100) break;
+                    this.ctx.font = `bold ${typo.education.titleSize}px ${typo.family}`;
                     this.ctx.fillStyle = '#2f2a22';
                     const eduDate = String(item.dateRange || '');
                     const eduDateWidth = this.ctx.measureText(eduDate).width;
                     const eduTitleMaxWidth = Math.max(120, contentW - eduDateWidth - 18);
-                    cursorY = this.drawWrappedText(item.degree || '', left, cursorY, eduTitleMaxWidth, 16, 2);
-                    this.drawRightAlignedText(eduDate, right, cursorY - 16);
-                    cursorY += 2;
-                    this.ctx.font = '12px Georgia';
+                    cursorY = this.drawWrappedText(
+                        item.degree || '',
+                        left,
+                        cursorY,
+                        eduTitleMaxWidth,
+                        typo.education.titleLineHeight,
+                        2
+                    );
+                    this.drawRightAlignedText(eduDate, right, cursorY - typo.education.titleLineHeight);
+                    cursorY += 5;
+                    this.ctx.font = `${typo.education.bodySize}px ${typo.family}`;
                     this.ctx.fillStyle = '#4a4438';
-                    cursorY = this.drawWrappedText(item.institution || '', left, cursorY, contentW, 16, 2);
+                    cursorY = this.drawWrappedText(
+                        item.institution || '',
+                        left,
+                        cursorY,
+                        contentW,
+                        typo.education.institutionLineHeight,
+                        2
+                    );
 
-                    const eduHighlights = Array.isArray(item.highlights) ? item.highlights.slice(0, 2) : [];
+                    const eduHighlights = Array.isArray(item.highlights) ? item.highlights : [];
                     if (eduHighlights.length > 0) {
-                        cursorY += 2;
-                        this.ctx.font = '12px Georgia';
+                        cursorY += 4;
+                        this.ctx.font = `${typo.education.highlightSize}px ${typo.family}`;
                         this.ctx.fillStyle = '#4a4438';
                         for (const bullet of eduHighlights) {
-                            if (cursorY > y + pageH - 35) break;
+                            if (cursorY > y + pageH - 45) break;
                             this.ctx.fillText('•', left + 4, cursorY);
-                            cursorY = this.drawWrappedText(bullet, left + 18, cursorY, contentW - 18, 16, 2);
-                            cursorY += 2;
+                            cursorY = this.drawWrappedText(
+                                bullet,
+                                left + 22,
+                                cursorY,
+                                contentW - 22,
+                                typo.education.highlightLineHeight
+                            );
+                            cursorY += 3;
                         }
                     }
 
-                    cursorY += 8;
+                    cursorY += typo.education.itemGap;
                 }
             }
         } else {
@@ -1411,7 +1551,11 @@ class Game {
             this.ctx.fillText('Resume data unavailable in this session.', left, y + 100);
             if (this.resumeLoadError) {
                 this.ctx.font = '15px Georgia';
-                this.ctx.fillText('Tip: open index.html once or run with Live Server, then return to game.', left, y + 130);
+                this.ctx.fillText('Tip: run the project with Live Server / localhost.', left, y + 130);
+                if (this.resumeLoadErrorMessage) {
+                    this.ctx.font = '13px Georgia';
+                    this.ctx.fillText(`Load error: ${this.resumeLoadErrorMessage}`, left, y + 156);
+                }
             }
         }
 

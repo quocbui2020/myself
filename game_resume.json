@@ -1,94 +1,102 @@
 {
+  "_guide": {
+    "howToEdit": "Edit this file to update in-game resume content. Keep valid JSON syntax (double quotes, commas, no trailing comma).",
+    "important": "Do not rename required keys like personal, summary, technicalSkills, workExperience, education.",
+    "resumeLayout": "Controls page size in game world units. Increase width/height for a larger resume canvas.",
+    "personal": "Top header info on resume.",
+    "summary": "Short professional summary paragraph.",
+    "technicalSkills": "Array of skill groups. Each item needs label and items[].",
+    "workExperience": "Array of jobs. Each job has title, company, dateRange, and highlights[].",
+    "education": "Array of education records. Each record has degree, institution, dateRange, and highlights[].",
+    "resumeTypography": "Font settings for resume text. Increase/decrease these values to tune readability."
+  },
+  "resumeLayout": {
+    "_comment": "Main size controls. Edit these two values first when you want bigger/smaller resume.",
+    "width": 1280,
+    "height": 1500
+  },
+  "resumeTypography": {
+    "_comment": "All font sizes in px for resume content only.",
+    "family": "Georgia",
+    "nameSize": 48,
+    "titleSize": 30,
+    "contactSize": 20,
+    "sectionTitleSize": 24,
+    "summarySize": 18,
+    "summaryLineHeight": 26,
+    "technicalSkills": {
+      "labelSize": 16,
+      "itemSize": 16,
+      "lineHeight": 24,
+      "itemGap": 6
+    },
+    "workExperience": {
+      "titleSize": 21,
+      "titleLineHeight": 28,
+      "companySize": 17,
+      "highlightSize": 16,
+      "highlightLineHeight": 24,
+      "jobGap": 8
+    },
+    "education": {
+      "bodySize": 17,
+      "titleSize": 21,
+      "titleLineHeight": 28,
+      "institutionLineHeight": 24,
+      "highlightSize": 16,
+      "highlightLineHeight": 24,
+      "itemGap": 10
+    }
+  },
   "personal": {
+    "_comment": "Contact/header block shown at the top of the resume.",
     "name": "QUOC NGOC BUI",
     "title": "Software Developer",
     "email": "quocbui824@gmail.com",
     "github": "https://github.com/quocbui2020",
     "linkedin": "https://www.linkedin.com/in/quoc-ngoc-bui"
   },
+  "_summaryComment": "One paragraph summary text.",
   "summary": "Software Developer with 4+ years of hands-on experience developing and maintaining web applications. Experienced with C#, .NET Framework, .NET Core, Angular, React, TypeScript, and T-SQL. Strong background in production environments and application development lifecycle. Go-to person for payment gateway implementation and critical system issues. Seeking to apply expertise in modernizing and supporting core application platforms.",
+  "_technicalSkillsComment": "List of skill categories. Add/remove categories as needed.",
   "technicalSkills": [
     {
       "label": "Languages & Frameworks",
-      "items": [
-        "C#",
-        ".NET Framework",
-        ".NET Core",
-        ".NET 8",
-        "ASP.NET",
-        "TypeScript",
-        "JavaScript",
-        "Python",
-        "SQL",
-        "HTML/CSS",
-        "C++"
-      ]
+      "items": ["C#", ".NET Framework", ".NET Core", ".NET 8", "ASP.NET", "TypeScript", "JavaScript", "Python", "SQL", "HTML/CSS", "C++"]
     },
     {
       "label": "Databases & Data Services",
-      "items": [
-        "T-SQL",
-        "SQL Server",
-        "Microsoft SQL Server",
-        "Entity Framework",
-        "Dapper",
-        "Relational Databases"
-      ]
+      "items": ["T-SQL", "SQL Server", "Microsoft SQL Server", "Entity Framework", "Dapper", "Relational Databases"]
     },
     {
       "label": "Cloud & DevOps",
-      "items": [
-        "Microsoft Azure",
-        "Azure DevOps",
-        "Azure Pipelines"
-      ]
+      "items": ["Microsoft Azure", "Azure DevOps", "Azure Pipelines"]
     },
     {
       "label": "Web Technologies",
-      "items": [
-        "AngularJS",
-        "React",
-        "RESTful APIs",
-        "JSON",
-        "Swagger"
-      ]
+      "items": ["AngularJS", "React", "RESTful APIs", "JSON", "Swagger"]
     },
     {
       "label": "Tools & Practices",
-      "items": [
-        "Git",
-        "Azure DevOps",
-        "Microsoft Visual Studio",
-        "Postman",
-        "CI/CD",
-        "Agile",
-        "Unit Testing",
-        "Integration Testing"
-      ]
+      "items": ["Git", "Azure DevOps", "Microsoft Visual Studio", "Postman", "CI/CD", "Agile", "Unit Testing", "Integration Testing"]
     },
     {
       "label": "Certifications",
-      "items": [
-        "Microsoft Certified: Azure Fundamentals (AZ-900)"
-      ]
+      "items": ["Microsoft Certified: Azure Fundamentals (AZ-900)"]
     },
     {
       "label": "Other Skills",
-      "items": [
-        "Agile Methodology",
-        "SDLC",
-        "Copilot AI for coding",
-        "Code Rabbit AI for PR reviewing"
-      ]
+      "items": ["Agile Methodology", "SDLC", "Copilot AI for coding", "Code Rabbit AI for PR reviewing"]
     }
   ],
+  "_workExperienceComment": "Jobs in display order (top to bottom). Most recent role first.",
   "workExperience": [
     {
       "title": "Software Developer",
       "company": "ImageTrend, LLC.",
       "dateRange": "Current",
       "highlights": [
-        "Owned end-to-end design, development, architecture, and maintenance of a payment gateway platform integrating 22+ payment providers across the C#/.NET stack, serving as the subject matter expert in payment gateway integration.",
+        "Owned end-to-end design, development, architecture and maintenance of payment gateway platform integrating 22+ payment integrations across C#/.NET stack.",
         "Led Payment Gateway Framework project - designed and developed secure payment integrations for multiple payment services.",
         "Architected and delivered .NET 8 migration for legacy systems, including assisting senior developer on full CI/CD pipeline remediation across Azure DevOps.",
         "Implemented JWT, OAuth, and AES encryption to protect sensitive payment data and prevent security vulnerabilities in production.",
@@ -118,6 +126,7 @@
       ]
     }
   ],
+  "_educationComment": "Education entries in display order.",
   "education": [
     {
       "degree": "Doctor of Philosophy (PhD) Computer Science",
