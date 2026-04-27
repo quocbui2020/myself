@@ -85,7 +85,7 @@ class Game {
     }
 
     bindEvents() {
-        this.canvas.style.touchAction = 'none';
+        this.canvas.style.touchAction = 'pan-x pan-y pinch-zoom';
         window.addEventListener('resize', () => this.resizeCanvas());
 
         this.canvas.addEventListener('mousemove', (event) => {
@@ -124,7 +124,16 @@ class Game {
 
         // Touch events for mobile controls
         this.canvas.addEventListener('touchstart', (event) => {
-            event.preventDefault();
+            const isPreStartPinch = !this.gameStarted && event.touches.length === 2;
+            if (!isPreStartPinch) {
+                event.preventDefault();
+            }
+
+            // Let browser handle real pinch-zoom before game starts.
+            if (isPreStartPinch) {
+                return;
+            }
+
             if (event.touches.length > 0) {
                 const touch = event.touches[0];
                 const rect = this.canvas.getBoundingClientRect();
@@ -169,7 +178,16 @@ class Game {
         }, { passive: false });
 
         this.canvas.addEventListener('touchmove', (event) => {
-            event.preventDefault();
+            const isPreStartPinch = !this.gameStarted && event.touches.length === 2;
+            if (!isPreStartPinch) {
+                event.preventDefault();
+            }
+
+            // Let browser handle real pinch-zoom before game starts.
+            if (isPreStartPinch) {
+                return;
+            }
+
             if (event.touches.length > 0) {
                 const rect = this.canvas.getBoundingClientRect();
                 const touch = event.touches[0];
@@ -251,7 +269,10 @@ class Game {
         }, { passive: false });
 
         this.canvas.addEventListener('touchend', (event) => {
-            event.preventDefault();
+            const isPreStartTouchEnd = !this.gameStarted;
+            if (!isPreStartTouchEnd) {
+                event.preventDefault();
+            }
             this.touchState.touchCount = event.touches.length;
             this.touchState.lastDistance = 0;
 
