@@ -17,6 +17,7 @@ class Game {
         // Keep world dimensions fixed regardless of browser zoom or viewport size.
         this.fixedWorldWidth = 1600;
         this.fixedWorldHeight = 1200;
+        this.preStartWheelOffsetX = 0;
         this.preStartWheelOffsetY = 0;
 
         this.currentFloor = 1;
@@ -174,11 +175,33 @@ class Game {
 
                 // Handle swipe movement (single touch)
                 if (event.touches.length === 1) {
-                    const worldPos = this.screenToWorld(this.touchState.currentX, this.touchState.currentY);
-                    this.player.setTarget(worldPos.x, worldPos.y);
-                    this.mouseX = this.touchState.currentX;
-                    this.mouseY = this.touchState.currentY;
-                    this.updateAimRing();
+                    if (!this.gameStarted) {
+                        // Pre-game: swipe to scroll the resume (push semantics)
+                        // Swipe up (negative deltaY) = scroll down (positive offset)
+                        // Swipe down (positive deltaY) = scroll up (negative offset)
+                        // Swipe left (negative deltaX) = scroll right (positive offset)
+                        // Swipe right (positive deltaX) = scroll left (negative offset)
+                        const deltaY = this.touchState.currentY - this.touchState.startY;
+                        const deltaX = this.touchState.currentX - this.touchState.startX;
+                        
+                        // Apply vertical scroll (Y axis)
+                        this.preStartWheelOffsetY -= deltaY * 0.5; // sensitivity factor
+                        
+                        // Apply horizontal scroll (X axis)
+                        this.preStartWheelOffsetX -= deltaX * 0.5; // sensitivity factor
+                        
+                        const maxCameraX = Math.max(0, this.worldWidth - this.width);
+                        const maxCameraY = Math.max(0, this.worldHeight - this.height);
+                        this.preStartWheelOffsetX = Math.max(0, Math.min(this.preStartWheelOffsetX, maxCameraX));
+                        this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
+                    } else {
+                        // In-game: swipe to move player (cursor follows touch)
+                        const worldPos = this.screenToWorld(this.touchState.currentX, this.touchState.currentY);
+                        this.player.setTarget(worldPos.x, worldPos.y);
+                        this.mouseX = this.touchState.currentX;
+                        this.mouseY = this.touchState.currentY;
+                        this.updateAimRing();
+                    }
                 }
                 
                 // Handle pinch zoom (two fingers)
@@ -197,8 +220,9 @@ class Game {
                         
                         if (!this.gameStarted) {
                             // Pre-game: use pinch to scroll resume
-                            // Pinch in (closer) scrolls up, pinch out (apart) scrolls down
-                            this.preStartWheelOffsetY += deltaDist * sensitivity;
+                            // Pinch in (fingers closer, deltaDist negative) = zoom out = scroll down (increase offset)
+                            // Pinch out (fingers apart, deltaDist positive) = zoom in = scroll up (decrease offset)
+                            this.preStartWheelOffsetY -= deltaDist * sensitivity;
                             const maxCameraY = Math.max(0, this.worldHeight - this.height);
                             this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
                         } else {
@@ -348,10 +372,11 @@ class Game {
         const maxCameraY = Math.max(0, this.worldHeight - this.height);
 
         // Before the quest starts, keep navigation document-like:
-        // fixed horizontal framing + wheel-only vertical scrolling.
+        // allow both horizontal and vertical scrolling via swipe/wheel.
         if (!this.gameStarted) {
-            this.cameraX = maxCameraX * 0.5;
+            this.preStartWheelOffsetX = Math.max(0, Math.min(this.preStartWheelOffsetX, maxCameraX));
             this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
+            this.cameraX = this.preStartWheelOffsetX;
             this.cameraY = this.preStartWheelOffsetY;
 
             this.renderOffsetX = this.width > this.worldWidth ? (this.width - this.worldWidth) * 0.5 : 0;
