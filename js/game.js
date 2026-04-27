@@ -103,7 +103,7 @@ class Game {
 
     async loadResumeData() {
         try {
-            const response = await fetch('resume.json');
+            const response = await fetch(`resume.json?t=${Date.now()}`, { cache: 'no-store' });
             if (!response.ok) throw new Error('resume.json not reachable');
             this.resumeData = await response.json();
             this.resumeLoadError = false;

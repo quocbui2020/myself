@@ -119,9 +119,9 @@
   ],
   "education": [
     {
-      "degree": "Online Doctor of Philosophy (PhD) Student in Computer Science",
+      "degree": "Doctor of Philosophy (PhD) in Computer Science",
       "institution": "Bagley College of Engineering, Mississippi State University, Starkville, MS.",
-      "dateRange": "Current",
+      "dateRange": "In Progress",
       "highlights": [
         "Areas of Focus: Software Engineering, Machine Learning, Requirement Engineering and Software Security.",
         "3+ years building Python-based data processing pipelines for collecting, transforming, and integrating structured data from multiple sources to support automated analysis workflows."
