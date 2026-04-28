@@ -93,6 +93,20 @@ class Game {
 
         this.mouseX = 0;
         this.mouseY = 0;
+        this.mobileControlsEnabled = this.detectMobileControls();
+        this.mobileControls = {
+            root: null,
+            joystick: null,
+            joystickKnob: null,
+            hammerBtn: null,
+            joystickPointerId: null,
+            joystickActive: false,
+            moveX: 0,
+            moveY: 0,
+            moveMagnitude: 0,
+            radius: 48,
+            attackHolding: false
+        };
         this.projectiles = [];
         this.cracks = [];
         this.torePapers = [];
@@ -165,6 +179,7 @@ class Game {
         this.centerCameraOnPlayer();
 
         this.bindEvents();
+        this.initMobileControls();
         this.createAdminPanel();
         this.updatePlayerScaledCombatStats();
         this.applyGameStartedVisualState();
@@ -720,11 +735,163 @@ class Game {
         };
     }
 
+    detectMobileControls() {
+        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        const noHover = window.matchMedia && window.matchMedia('(hover: none)').matches;
+        return !!(coarse || noHover);
+    }
+
+    initMobileControls() {
+        const root = document.getElementById('mobileControls');
+        if (!root) return;
+        this.mobileControls.root = root;
+        this.mobileControls.joystick = document.getElementById('mobileJoystick');
+        this.mobileControls.joystickKnob = document.getElementById('mobileJoystickKnob');
+        this.mobileControls.hammerBtn = document.getElementById('mobileHammerBtn');
+        this.setMobileControlsVisibility();
+        if (!this.mobileControlsEnabled) return;
+
+        const joystick = this.mobileControls.joystick;
+        const hammerBtn = this.mobileControls.hammerBtn;
+        if (joystick) {
+            joystick.addEventListener('pointerdown', (event) => {
+                event.preventDefault();
+                this.mobileControls.joystickPointerId = event.pointerId;
+                this.mobileControls.joystickActive = true;
+                joystick.setPointerCapture(event.pointerId);
+                this.updateJoystickVector(event);
+            });
+            joystick.addEventListener('pointermove', (event) => {
+                if (!this.mobileControls.joystickActive || event.pointerId !== this.mobileControls.joystickPointerId) return;
+                event.preventDefault();
+                this.updateJoystickVector(event);
+            });
+            const endJoystick = (event) => {
+                if (event.pointerId !== this.mobileControls.joystickPointerId) return;
+                this.mobileControls.joystickActive = false;
+                this.mobileControls.joystickPointerId = null;
+                this.mobileControls.moveX = 0;
+                this.mobileControls.moveY = 0;
+                this.mobileControls.moveMagnitude = 0;
+                this.updateJoystickKnob();
+            };
+            joystick.addEventListener('pointerup', endJoystick);
+            joystick.addEventListener('pointercancel', endJoystick);
+            joystick.addEventListener('lostpointercapture', endJoystick);
+        }
+
+        if (hammerBtn) {
+            hammerBtn.addEventListener('pointerdown', (event) => {
+                event.preventDefault();
+                if (!this.gameStarted) return;
+                this.mobileControls.attackHolding = true;
+                this.isHolding = true;
+                this.holdStartTime = performance.now();
+                hammerBtn.classList.add('is-pressed');
+            });
+
+            const releaseAttack = (event) => {
+                event.preventDefault();
+                if (!this.mobileControls.attackHolding) return;
+                this.mobileControls.attackHolding = false;
+                hammerBtn.classList.remove('is-pressed');
+                this.onMobileAttackRelease();
+            };
+
+            hammerBtn.addEventListener('pointerup', releaseAttack);
+            hammerBtn.addEventListener('pointercancel', releaseAttack);
+            hammerBtn.addEventListener('lostpointercapture', releaseAttack);
+        }
+    }
+
+    setMobileControlsVisibility() {
+        const root = this.mobileControls.root;
+        if (!root) return;
+        const visible = this.mobileControlsEnabled && this.gameStarted;
+        root.classList.toggle('is-visible', visible);
+        root.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    }
+
+    updateJoystickVector(event) {
+        const joystick = this.mobileControls.joystick;
+        if (!joystick) return;
+        const rect = joystick.getBoundingClientRect();
+        const centerX = rect.left + rect.width * 0.5;
+        const centerY = rect.top + rect.height * 0.5;
+        const dx = event.clientX - centerX;
+        const dy = event.clientY - centerY;
+        const radius = this.mobileControls.radius;
+        const dist = Math.hypot(dx, dy) || 1;
+        const clamped = Math.min(radius, dist);
+        const nx = dx / dist;
+        const ny = dy / dist;
+        this.mobileControls.moveX = nx;
+        this.mobileControls.moveY = ny;
+        this.mobileControls.moveMagnitude = clamped / radius;
+        this.updateJoystickKnob();
+    }
+
+    updateJoystickKnob() {
+        const knob = this.mobileControls.joystickKnob;
+        if (!knob) return;
+        const radius = this.mobileControls.radius;
+        const x = this.mobileControls.moveX * this.mobileControls.moveMagnitude * radius;
+        const y = this.mobileControls.moveY * this.mobileControls.moveMagnitude * radius;
+        knob.style.transform = `translate(${x}px, ${y}px)`;
+    }
+
+    applyMobileJoystickMovement() {
+        if (!this.mobileControlsEnabled || !this.gameStarted) return;
+        const mag = this.mobileControls.moveMagnitude;
+        if (mag <= 0.03) return;
+
+        const center = this.player.getCenter();
+        const reach = 180 * mag;
+        const worldX = center.x + this.mobileControls.moveX * reach;
+        const worldY = center.y + this.mobileControls.moveY * reach;
+        this.player.setTarget(worldX, worldY);
+
+        const screen = this.worldToScreen(worldX, worldY);
+        this.mouseX = screen.x;
+        this.mouseY = screen.y;
+        this.updateAimRing();
+    }
+
+    getMobileAttackTarget() {
+        const center = this.player.getCenter();
+        const angle = Number.isFinite(this.player.angle) ? this.player.angle : 0;
+        const distance = 160;
+        return {
+            x: center.x + Math.cos(angle) * distance,
+            y: center.y + Math.sin(angle) * distance
+        };
+    }
+
+    onMobileAttackRelease() {
+        if (!this.gameStarted || !this.isHolding) {
+            this.isHolding = false;
+            this.isChargingShockwave = false;
+            return;
+        }
+        const now = performance.now();
+        const elapsed = now - this.holdStartTime;
+        this.isHolding = false;
+        this.isChargingShockwave = false;
+
+        const fullChargeTime = this.shockwaveDelayMs + this.shockwaveChargeMs;
+        if (this.power >= this.maxPower && elapsed >= fullChargeTime) {
+            this.fireSkill();
+        } else {
+            const worldPos = this.getMobileAttackTarget();
+            this.swingHammerAt(worldPos.x, worldPos.y);
+        }
+    }
+
     updateAimRing() {
         const ring = document.getElementById('aimRing');
         if (!ring) return;
 
-        if (!this.gameStarted) {
+        if (!this.gameStarted || this.mobileControlsEnabled) {
             ring.style.display = 'none';
             return;
         }
@@ -737,12 +904,13 @@ class Game {
     applyGameStartedVisualState() {
         const ring = document.getElementById('aimRing');
         if (this.gameStarted) {
-            this.canvas.style.cursor = 'none';
-            if (ring) ring.style.display = 'block';
+            this.canvas.style.cursor = this.mobileControlsEnabled ? 'default' : 'none';
+            if (ring) ring.style.display = this.mobileControlsEnabled ? 'none' : 'block';
         } else {
             this.canvas.style.cursor = 'default';
             if (ring) ring.style.display = 'none';
         }
+        this.setMobileControlsVisibility();
     }
 
     resizeCanvas() {
@@ -1572,6 +1740,8 @@ class Game {
         const holdElapsed = this.isHolding ? (now - this.holdStartTime) : 0;
         this.isChargingShockwave = this.isHolding && this.power >= this.maxPower && holdElapsed >= this.shockwaveDelayMs;
 
+        this.applyMobileJoystickMovement();
+
         // Keep camera navigation responsive before quest acceptance by letting
         // the hidden player continue following the cursor target.
         if (!this.isChargingShockwave && !(this.ropePullAnim && (this.ropePullAnim.phase === 'jump' || this.ropePullAnim.phase === 'slam'))) {
@@ -2348,6 +2518,10 @@ class Game {
         this.cracks = [];
         this.torePapers = [];
         this.projectiles = [];
+        this.mobileControls.moveX = 0;
+        this.mobileControls.moveY = 0;
+        this.mobileControls.moveMagnitude = 0;
+        this.updateJoystickKnob();
         this.spawnFloorEnemies();
     }
 

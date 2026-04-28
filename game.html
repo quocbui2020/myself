@@ -39,12 +39,91 @@
             z-index: 4;
             box-shadow: 0 0 14px rgba(78, 163, 226, 0.9), 0 0 24px rgba(78, 163, 226, 0.45), inset 0 0 8px rgba(78, 163, 226, 0.25);
         }
+
+        .mobile-controls {
+            position: fixed;
+            inset: 0;
+            z-index: 6;
+            pointer-events: none;
+            display: none;
+        }
+
+        .mobile-controls.is-visible {
+            display: block;
+        }
+
+        .mobile-joystick {
+            position: absolute;
+            left: 18px;
+            bottom: 18px;
+            width: 136px;
+            height: 136px;
+            border-radius: 50%;
+            border: 2px solid rgba(226, 232, 240, 0.38);
+            background: radial-gradient(circle at 30% 28%, rgba(148, 163, 184, 0.35), rgba(15, 23, 42, 0.62));
+            box-shadow: inset 0 0 14px rgba(15, 23, 42, 0.55), 0 6px 20px rgba(2, 6, 23, 0.45);
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .mobile-joystick-knob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 56px;
+            height: 56px;
+            margin-left: -28px;
+            margin-top: -28px;
+            border-radius: 50%;
+            border: 2px solid rgba(219, 234, 254, 0.85);
+            background: radial-gradient(circle at 35% 30%, rgba(191, 219, 254, 0.95), rgba(59, 130, 246, 0.88));
+            box-shadow: 0 4px 16px rgba(29, 78, 216, 0.5);
+            pointer-events: none;
+            transform: translate(0px, 0px);
+        }
+
+        .mobile-hammer {
+            position: absolute;
+            right: 18px;
+            bottom: 18px;
+            width: 132px;
+            height: 132px;
+            border-radius: 50%;
+            border: 2px solid rgba(254, 226, 226, 0.42);
+            background: radial-gradient(circle at 34% 26%, rgba(254, 202, 202, 0.9), rgba(185, 28, 28, 0.85));
+            color: #fff7ed;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            text-shadow: 0 2px 6px rgba(69, 10, 10, 0.5);
+            box-shadow: inset 0 0 18px rgba(127, 29, 29, 0.45), 0 10px 24px rgba(127, 29, 29, 0.38);
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .mobile-hammer.is-pressed {
+            transform: scale(0.96);
+            filter: brightness(1.08);
+        }
+
+        @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+            .mobile-controls {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
 
     <div id="aimRing" class="aim-ring"></div>
+
+    <div id="mobileControls" class="mobile-controls" aria-hidden="true">
+        <div id="mobileJoystick" class="mobile-joystick">
+            <div id="mobileJoystickKnob" class="mobile-joystick-knob"></div>
+        </div>
+        <button id="mobileHammerBtn" class="mobile-hammer" type="button">HAMMER</button>
+    </div>
 
     <script src="js/player.js"></script>
     <script src="js/enemy.js"></script>
