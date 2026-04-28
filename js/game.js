@@ -1327,12 +1327,14 @@ class Game {
         }
     }
 
-    swingHammerAt(worldX, worldY) {
+    swingHammerAt(worldX, worldY, updateTarget = true) {
         const now = performance.now();
         if (now - this.lastHammerTime < this.hammerCooldownMs) return;
         this.lastHammerTime = now;
 
-        this.player.setTarget(worldX, worldY);
+        if (updateTarget) {
+            this.player.setTarget(worldX, worldY);
+        }
         this.player.triggerHammer();
 
         const center = this.player.getCenter();
@@ -1389,7 +1391,8 @@ class Game {
             this.swingHammer(event);
         } else {
             const worldPos = this.screenToWorld(this.touchState.currentX, this.touchState.currentY);
-            this.swingHammerAt(worldPos.x, worldPos.y);
+            // Do not retarget movement on mobile button tap.
+            this.swingHammerAt(worldPos.x, worldPos.y, false);
         }
     }
 
@@ -1575,12 +1578,18 @@ class Game {
         const center = this.player.getCenter();
         const scale = this.getPlayerScale();
         const spread = 60 * scale;
+        const shockwaveStartRadius = 10;
+        const shockwaveSpeed = 22;
+        const maxRadius = 360 * 3;
+        const shockwaveLifeFrames = Math.max(1, Math.ceil((maxRadius - shockwaveStartRadius) / shockwaveSpeed));
 
         for (let i = 0; i < 4; i++) {
             this.addCrack(
                 center.x + (Math.random() - 0.5) * spread,
                 center.y + (Math.random() - 0.5) * spread,
-                3
+                3,
+                'fire',
+                shockwaveLifeFrames
             );
         }
         const killed = [...this.currentEnemies];
@@ -1591,16 +1600,17 @@ class Game {
             this.particles.createCatch(ec.x, ec.y);
             this.particles.createExplosion(ec.x, ec.y, 10, '#ffe08a');
         }
-        const maxRadius = 360 * 3;
         this.shockwaveRings.push({
             x: center.x,
             y: center.y,
-            radius: 10,
-            speed: 22,
+            radius: shockwaveStartRadius,
+            speed: shockwaveSpeed,
             maxRadius,
             hitEnemies: new Set()
         });
         this.particles.createExplosion(center.x, center.y, 48, '#ffe08a');
+        this.particles.createExplosion(center.x, center.y, 34, '#ff7a1a');
+        this.particles.createExplosion(center.x, center.y, 24, '#ff3b1f');
     }
 
     getRopePullPlayerYOffset() {
@@ -1662,8 +1672,9 @@ class Game {
         }
     }
 
-    addCrack(x, y, sizeMultiplier = 1) {
+    addCrack(x, y, sizeMultiplier = 1, style = 'ice', lifeFrames = 240) {
         const scale = this.getPlayerScale();
+        const crackLife = Number.isFinite(lifeFrames) && lifeFrames > 0 ? Math.floor(lifeFrames) : 240;
         const branches = [];
         const branchCount = 8 + Math.floor(Math.random() * 4);
         for (let i = 0; i < branchCount; i++) {
@@ -1682,7 +1693,22 @@ class Game {
             branches.push(points);
         }
 
-        this.cracks.push({ branches, life: 240 });
+        const embers = [];
+        if (style === 'fire') {
+            const emberCount = Math.floor(16 + Math.random() * 14);
+            for (let i = 0; i < emberCount; i++) {
+                embers.push({
+                    x: x + (Math.random() - 0.5) * 34 * scale * sizeMultiplier,
+                    y: y + (Math.random() - 0.5) * 24 * scale * sizeMultiplier,
+                    vx: (Math.random() - 0.5) * 1.2,
+                    vy: -0.8 - Math.random() * 1.6,
+                    radius: (1 + Math.random() * 2.2) * scale,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        this.cracks.push({ branches, life: crackLife, maxLife: crackLife, style, embers });
         if (this.cracks.length > 180) {
             this.cracks.shift();
         }
@@ -1797,6 +1823,16 @@ class Game {
         this.particles.update();
         for (const crack of this.cracks) {
             crack.life -= 1;
+            if (crack.style === 'fire' && Array.isArray(crack.embers)) {
+                for (const ember of crack.embers) {
+                    ember.x += ember.vx;
+                    ember.y += ember.vy;
+                    ember.vx *= 0.985;
+                    ember.vy *= 0.97;
+                    ember.phase += 0.22;
+                    ember.x += Math.sin(ember.phase) * 0.12;
+                }
+            }
         }
         this.cracks = this.cracks.filter((c) => c.life > 0);
 
@@ -2302,16 +2338,52 @@ class Game {
     drawCracks() {
         this.ctx.save();
         for (const crack of this.cracks) {
-            const alpha = Math.min(0.85, crack.life / 240);
-            this.ctx.strokeStyle = `rgba(210, 228, 255, ${alpha})`;
-            this.ctx.lineWidth = 1.6;
+            const maxLife = Math.max(1, crack.maxLife || 240);
+            const alpha = Math.min(0.85, crack.life / maxLife);
+            const isFire = crack.style === 'fire';
+            if (isFire) {
+                this.ctx.shadowColor = `rgba(255, 96, 24, ${Math.min(0.9, alpha + 0.1)})`;
+                this.ctx.shadowBlur = 14;
+            } else {
+                this.ctx.shadowColor = 'transparent';
+                this.ctx.shadowBlur = 0;
+            }
+
             for (const branch of crack.branches) {
                 this.ctx.beginPath();
                 this.ctx.moveTo(branch[0].x, branch[0].y);
                 for (let i = 1; i < branch.length; i++) {
                     this.ctx.lineTo(branch[i].x, branch[i].y);
                 }
-                this.ctx.stroke();
+
+                if (isFire) {
+                    this.ctx.strokeStyle = `rgba(255, 72, 28, ${Math.min(0.95, alpha + 0.15)})`;
+                    this.ctx.lineWidth = 2.7;
+                    this.ctx.stroke();
+
+                    this.ctx.strokeStyle = `rgba(255, 186, 72, ${Math.min(0.9, alpha + 0.05)})`;
+                    this.ctx.lineWidth = 1.25;
+                    this.ctx.stroke();
+                } else {
+                    this.ctx.strokeStyle = `rgba(210, 228, 255, ${alpha})`;
+                    this.ctx.lineWidth = 1.6;
+                    this.ctx.stroke();
+                }
+            }
+
+            if (isFire && Array.isArray(crack.embers)) {
+                const emberAlpha = Math.min(0.95, alpha + 0.08);
+                for (const ember of crack.embers) {
+                    this.ctx.fillStyle = `rgba(255, 110, 36, ${emberAlpha})`;
+                    this.ctx.beginPath();
+                    this.ctx.arc(ember.x, ember.y, ember.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    this.ctx.fillStyle = `rgba(255, 214, 122, ${Math.max(0.2, emberAlpha - 0.18)})`;
+                    this.ctx.beginPath();
+                    this.ctx.arc(ember.x, ember.y, ember.radius * 0.52, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
             }
         }
         this.ctx.restore();
