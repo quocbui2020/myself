@@ -3,6 +3,7 @@
     "howToEdit": "Edit this file to update in-game resume content. Keep valid JSON syntax (double quotes, commas, no trailing comma).",
     "important": "Do not rename required keys like personal, summary, technicalSkills, workExperience, education.",
     "resumeLayout": "Controls page size in game world units. Increase width/height for a larger resume canvas.",
+    "resumeLayoutForSmartPhone": "Optional smartphone-only resume size override. Useful when mobile text wrapping makes the resume taller than laptop.",
     "personal": "Top header info on resume.",
     "summary": "Short professional summary paragraph.",
     "technicalSkills": "Array of skill groups. Each item needs label and items[].",
@@ -16,6 +17,11 @@
     "_comment": "Main size controls. Edit these two values first when you want bigger/smaller resume.",
     "width": 1280,
     "height": 1550
+  },
+  "resumeLayoutForSmartPhone": {
+    "_comment": "Optional smartphone-only resume size override.",
+    "width": 1280,
+    "height": 1710
   },
   "gameplaySettings": {
     "_comment": "Gameplay knobs. Increase/decrease to tune difficulty and feel.",

@@ -721,7 +721,11 @@ class Game {
     }
 
     applyResumeLayoutOverrides() {
-        const layout = this.resumeData && this.resumeData.resumeLayout ? this.resumeData.resumeLayout : null;
+        const baseLayout = this.resumeData && this.resumeData.resumeLayout ? this.resumeData.resumeLayout : null;
+        const mobileLayout = this.resumeData && this.resumeData.resumeLayoutForSmartPhone
+            ? this.resumeData.resumeLayoutForSmartPhone
+            : null;
+        const layout = this.mobileControlsEnabled && mobileLayout ? mobileLayout : baseLayout;
         if (!layout) return;
 
         const width = Number(layout.width);
@@ -1300,13 +1304,7 @@ class Game {
     updateResumeRect() {
         const resumeLayout = this.layoutConfig.resume;
         const pageW = Math.min(resumeLayout.maxWidth, this.worldWidth * resumeLayout.widthRatio);
-        // Mobile browsers can wrap resume text slightly differently, which may push
-        // the last education entry below the fixed page cutoff. Give smartphone
-        // layouts a taller in-world sheet so the full resume stays visible.
-        const maxHeight = this.mobileControlsEnabled
-            ? Math.min(this.worldHeight * resumeLayout.heightRatio, resumeLayout.maxHeight + 260)
-            : resumeLayout.maxHeight;
-        const pageH = Math.min(maxHeight, this.worldHeight * resumeLayout.heightRatio);
+        const pageH = Math.min(resumeLayout.maxHeight, this.worldHeight * resumeLayout.heightRatio);
         const x = (this.worldWidth - pageW) / 2;
         const y = (this.worldHeight - pageH) / 2;
         this.resumeRect = { x, y, width: pageW, height: pageH };
