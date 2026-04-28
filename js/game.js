@@ -99,7 +99,8 @@ class Game {
 
         this.lastHammerTime = 0;
         this.hammerCooldownMs = 220;
-        this.hammerRange = 90;
+        this.baseHammerRange = 90;
+        this.hammerRange = this.baseHammerRange;
         this.hammerDamage = 1;
         this.stunMs = 2200;
         this.resumeHealth = 100;
@@ -165,9 +166,20 @@ class Game {
 
         this.bindEvents();
         this.createAdminPanel();
+        this.updatePlayerScaledCombatStats();
         this.applyGameStartedVisualState();
         this.updateHud();
         this.gameLoop();
+    }
+
+    getPlayerScale() {
+        if (!this.player || !Number.isFinite(this.player.width) || this.player.width <= 0) return 1;
+        return this.player.width / 64;
+    }
+
+    updatePlayerScaledCombatStats() {
+        const scale = this.getPlayerScale();
+        this.hammerRange = this.baseHammerRange * scale;
     }
 
     bindEvents() {
@@ -669,6 +681,30 @@ class Game {
             this.player.speed = this.gameplaySettings.playerSpeed;
             this.player.x = Math.max(0, Math.min(this.player.x, this.worldWidth - this.player.width));
             this.player.y = Math.max(0, Math.min(this.player.y, this.worldHeight - this.player.height));
+            this.updatePlayerScaledCombatStats();
+        }
+
+        // Apply current gameplay settings to already spawned enemies too.
+        for (const enemy of this.currentEnemies) {
+            const oldMaxHp = Math.max(1, enemy.maxHp || 1);
+            const hpRatio = Math.max(0, Math.min(1, enemy.hp / oldMaxHp));
+
+            if (enemy.isBoss) {
+                enemy.width = this.gameplaySettings.bugBossSize;
+                enemy.height = this.gameplaySettings.bugBossSize;
+                enemy.baseSpeed = this.gameplaySettings.bugBossSpeed;
+                enemy.maxHp = this.gameplaySettings.bugBossHealth + (enemy.upgradeTier || 0);
+            } else {
+                enemy.width = this.gameplaySettings.bugSize;
+                enemy.height = this.gameplaySettings.bugSize;
+                enemy.baseSpeed = this.gameplaySettings.bugSpeed;
+                enemy.maxHp = this.gameplaySettings.bugHealth + (enemy.upgradeTier || 0);
+            }
+
+            enemy.speed = enemy.baseSpeed;
+            enemy.hp = Math.max(1, enemy.maxHp * hpRatio);
+            enemy.x = Math.max(0, Math.min(enemy.x, this.worldWidth - enemy.width));
+            enemy.y = Math.max(0, Math.min(enemy.y, this.worldHeight - enemy.height));
         }
 
         if (source.defaultSkillAnimation === 'shockwave' || source.defaultSkillAnimation === 'ropepull') {
@@ -1095,11 +1131,13 @@ class Game {
         this.player.triggerHammer();
 
         const center = this.player.getCenter();
+        const scale = this.getPlayerScale();
         const dirX = worldPos.x - center.x;
         const dirY = worldPos.y - center.y;
         const dirLen = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
-        const impactX = center.x + (dirX / dirLen) * 60;
-        const impactY = center.y + (dirY / dirLen) * 60;
+        const impactDistance = 60 * scale;
+        const impactX = center.x + (dirX / dirLen) * impactDistance;
+        const impactY = center.y + (dirY / dirLen) * impactDistance;
 
         this.addCrack(impactX, impactY);
         this.particles.createExplosion(impactX, impactY, 12, '#dbeafe');
@@ -1130,11 +1168,13 @@ class Game {
         this.player.triggerHammer();
 
         const center = this.player.getCenter();
+        const scale = this.getPlayerScale();
         const dirX = worldX - center.x;
         const dirY = worldY - center.y;
         const dirLen = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
-        const impactX = center.x + (dirX / dirLen) * 60;
-        const impactY = center.y + (dirY / dirLen) * 60;
+        const impactDistance = 60 * scale;
+        const impactX = center.x + (dirX / dirLen) * impactDistance;
+        const impactY = center.y + (dirY / dirLen) * impactDistance;
 
         this.addCrack(impactX, impactY);
         this.particles.createExplosion(impactX, impactY, 12, '#dbeafe');
@@ -1327,7 +1367,9 @@ class Game {
         const center = this.player.getCenter();
 
         if (anim.phase === 'pull') {
-            const t = Math.min(1, elapsed / anim.pullDuration);
+            const jumpLeadMs = Math.min(140, anim.pullDuration * 0.22);
+            const pullOnlyDuration = Math.max(1, anim.pullDuration - jumpLeadMs);
+            const t = Math.min(1, elapsed / pullOnlyDuration);
             const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
             for (const b of anim.bugs) {
                 if (!b.enemy) continue;
@@ -1337,7 +1379,7 @@ class Game {
                 b.enemy.x = b.startX + (targetX - b.startX) * eased;
                 b.enemy.y = b.startY + (targetY - b.startY) * eased;
             }
-            if (elapsed >= anim.pullDuration) {
+            if (elapsed >= pullOnlyDuration) {
                 anim.phase = 'jump';
                 anim.startTime = now;
             }
@@ -1356,10 +1398,13 @@ class Game {
 
     executeSlamKill() {
         const center = this.player.getCenter();
+        const scale = this.getPlayerScale();
+        const spread = 60 * scale;
         for (let i = 0; i < 4; i++) {
             this.addCrack(
-                center.x + (Math.random() - 0.5) * 60,
-                center.y + (Math.random() - 0.5) * 60
+                center.x + (Math.random() - 0.5) * spread,
+                center.y + (Math.random() - 0.5) * spread,
+                3
             );
         }
         const killed = [...this.currentEnemies];
@@ -1370,7 +1415,7 @@ class Game {
             this.particles.createCatch(ec.x, ec.y);
             this.particles.createExplosion(ec.x, ec.y, 10, '#ffe08a');
         }
-        const maxRadius = 360;
+        const maxRadius = 360 * 3;
         this.shockwaveRings.push({
             x: center.x,
             y: center.y,
@@ -1438,17 +1483,18 @@ class Game {
         }
     }
 
-    addCrack(x, y) {
+    addCrack(x, y, sizeMultiplier = 1) {
+        const scale = this.getPlayerScale();
         const branches = [];
         const branchCount = 8 + Math.floor(Math.random() * 4);
         for (let i = 0; i < branchCount; i++) {
             const angle = (Math.PI * 2 * i) / branchCount + (Math.random() - 0.5) * 0.45;
-            const length = 40 + Math.random() * 70;
+            const length = (40 + Math.random() * 70) * scale * sizeMultiplier;
             const segments = 5 + Math.floor(Math.random() * 3);
             const points = [{ x, y }];
             for (let s = 1; s <= segments; s++) {
                 const t = s / segments;
-                const jitter = (Math.random() - 0.5) * 10;
+                const jitter = (Math.random() - 0.5) * 10 * scale * sizeMultiplier;
                 points.push({
                     x: x + Math.cos(angle) * length * t + Math.cos(angle + Math.PI / 2) * jitter,
                     y: y + Math.sin(angle) * length * t + Math.sin(angle + Math.PI / 2) * jitter
@@ -2173,9 +2219,9 @@ class Game {
             this.ctx.rotate(angle);
             this.ctx.fillStyle = '#ff3030';
             this.ctx.beginPath();
-            this.ctx.moveTo(12, 0);
-            this.ctx.lineTo(-8, -6);
-            this.ctx.lineTo(-8, 6);
+            this.ctx.moveTo(24, 0);
+            this.ctx.lineTo(-16, -12);
+            this.ctx.lineTo(-16, 12);
             this.ctx.closePath();
             this.ctx.fill();
             this.ctx.restore();

@@ -57,6 +57,7 @@ class Player {
 
     draw(ctx, yOffset = 0) {
         const center = this.getCenter();
+        const visualScale = this.width / 64;
         const legOffset = Math.sin(Date.now() * 0.02) * 2;
         const hammerSwing = this.hammerAnim > 0 ? Math.sin((12 - this.hammerAnim) * 0.5) * 1.2 : 0;
         const gunKick = this.gunAnim > 0 ? (this.gunAnim / 8) * 4 : 0;
@@ -64,6 +65,7 @@ class Player {
         ctx.save();
         ctx.translate(center.x, center.y + yOffset);
         ctx.rotate(this.angle);
+        ctx.scale(visualScale, visualScale);
 
         // Horse body
         ctx.fillStyle = '#7a4a24';
@@ -161,12 +163,12 @@ class Player {
 
         // Gun muzzle flash
         if (this.gunAnim > 0) {
-            const muzzleX = center.x + Math.cos(this.angle) * 26;
-            const muzzleY = center.y + Math.sin(this.angle) * 26;
+            const muzzleX = center.x + Math.cos(this.angle) * 26 * visualScale;
+            const muzzleY = center.y + Math.sin(this.angle) * 26 * visualScale;
             ctx.save();
             ctx.fillStyle = 'rgba(255, 230, 120, 0.65)';
             ctx.beginPath();
-            ctx.arc(muzzleX, muzzleY, 7 + this.gunAnim * 0.4, 0, Math.PI * 2);
+            ctx.arc(muzzleX, muzzleY, (7 + this.gunAnim * 0.4) * visualScale, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
         }

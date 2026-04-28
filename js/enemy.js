@@ -125,9 +125,11 @@ class Enemy {
     draw(ctx, now) {
         const center = this.getCenter();
         const stunned = this.isStunned(now);
+        const visualScale = this.width / (this.isBoss ? 74 : 50);
 
         ctx.save();
         ctx.translate(center.x, center.y);
+        ctx.scale(visualScale, visualScale);
 
         if (this.isBoss) {
             ctx.fillStyle = stunned ? '#8da4be' : '#d6461f';
@@ -180,7 +182,7 @@ class Enemy {
         ctx.restore();
 
         // Health bar
-        const barW = 36;
+        const barW = Math.max(36, this.width * 0.72);
         const pct = Math.max(0, this.hp / this.maxHp);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
         ctx.fillRect(center.x - barW / 2, center.y - this.height / 2 - 12, barW, 5);
@@ -189,7 +191,7 @@ class Enemy {
 
         if (this.eatingResume && !stunned) {
             ctx.fillStyle = '#ffd166';
-            ctx.font = 'bold 12px Arial';
+            ctx.font = `bold ${Math.max(12, Math.round(12 * visualScale))}px Arial`;
             ctx.textAlign = 'center';
             ctx.fillText('EATING', center.x, center.y - this.height / 2 - 16);
         }
