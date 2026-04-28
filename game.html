@@ -92,21 +92,30 @@
             bottom: 18px;
             width: 132px;
             height: 132px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 50%;
             border: 2px solid rgba(254, 226, 226, 0.42);
             background: radial-gradient(circle at 34% 26%, rgba(254, 202, 202, 0.9), rgba(185, 28, 28, 0.85));
-            color: #fff7ed;
-            font-size: 20px;
-            font-weight: 800;
-            letter-spacing: 0.6px;
-            text-shadow: 0 2px 6px rgba(69, 10, 10, 0.5);
             box-shadow: inset 0 0 18px rgba(127, 29, 29, 0.45), 0 10px 24px rgba(127, 29, 29, 0.38);
             pointer-events: auto;
             touch-action: none;
+            appearance: none;
+            -webkit-appearance: none;
+            outline: none;
             user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-hammer-icon {
+            width: 56px;
+            height: 56px;
+            fill: #1a1720;
+            filter: drop-shadow(0 2px 6px rgba(69, 10, 10, 0.6));
+            pointer-events: none;
         }
 
         .mobile-hammer.is-pressed {
@@ -130,7 +139,16 @@
         <div id="mobileJoystick" class="mobile-joystick">
             <div id="mobileJoystickKnob" class="mobile-joystick-knob"></div>
         </div>
-        <button id="mobileHammerBtn" class="mobile-hammer" type="button">HAMMER</button>
+        <button id="mobileHammerBtn" class="mobile-hammer" type="button" aria-label="Hammer attack">
+            <svg class="mobile-hammer-icon" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+                <g transform="rotate(-42 32 32)">
+                    <rect x="28" y="20" width="8" height="40" rx="3" ry="3" />
+                    <rect x="17" y="10" width="30" height="13" rx="2" ry="2" />
+                    <rect x="20" y="21" width="24" height="6" rx="2" ry="2" />
+                    <rect x="18" y="8" width="6" height="4" rx="1" ry="1" />
+                </g>
+            </svg>
+        </button>
     </div>
 
     <script src="js/player.js"></script>
