@@ -1355,7 +1355,8 @@ class Game {
             bugs,
             pullDuration: 700,
             jumpDuration: 350,
-            slamDuration: 500
+            slamDuration: 500,
+            hammerTriggered: false
         };
     }
 
@@ -1382,6 +1383,12 @@ class Game {
             if (elapsed >= pullOnlyDuration) {
                 anim.phase = 'jump';
                 anim.startTime = now;
+                if (!anim.hammerTriggered) {
+                    // Match swing length to jump so hammer finishes at landing impact.
+                    const swingFrames = Math.max(12, Math.round(anim.jumpDuration / 16));
+                    this.player.triggerHammer(swingFrames);
+                    anim.hammerTriggered = true;
+                }
             }
         } else if (anim.phase === 'jump') {
             if (elapsed >= anim.jumpDuration) {
@@ -1400,6 +1407,7 @@ class Game {
         const center = this.player.getCenter();
         const scale = this.getPlayerScale();
         const spread = 60 * scale;
+
         for (let i = 0; i < 4; i++) {
             this.addCrack(
                 center.x + (Math.random() - 0.5) * spread,
@@ -1425,7 +1433,6 @@ class Game {
             hitEnemies: new Set()
         });
         this.particles.createExplosion(center.x, center.y, 48, '#ffe08a');
-        this.player.triggerHammer();
     }
 
     getRopePullPlayerYOffset() {
@@ -1438,7 +1445,11 @@ class Game {
         }
         if (anim.phase === 'slam') {
             const t = Math.min(1, elapsed / anim.slamDuration);
-            return t < 0.15 ? 12 * (t / 0.15) : 12 * (1 - (t - 0.15) / 0.85);
+            // Impact dip only (no second upward jump).
+            const impactDepth = 14;
+            return t < 0.18
+                ? impactDepth * (t / 0.18)
+                : impactDepth * (1 - (t - 0.18) / 0.82);
         }
         return 0;
     }

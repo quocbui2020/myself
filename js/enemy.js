@@ -126,48 +126,152 @@ class Enemy {
         const center = this.getCenter();
         const stunned = this.isStunned(now);
         const visualScale = this.width / (this.isBoss ? 74 : 50);
+        const bob = Math.sin(now * 0.01 + this.wanderAngle) * 0.8;
 
         ctx.save();
-        ctx.translate(center.x, center.y);
+        ctx.translate(center.x, center.y + bob * visualScale);
         ctx.scale(visualScale, visualScale);
 
+        // Ground shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+        ctx.beginPath();
+        ctx.ellipse(0, 16, this.isBoss ? 26 : 20, this.isBoss ? 7 : 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
         if (this.isBoss) {
-            ctx.fillStyle = stunned ? '#8da4be' : '#d6461f';
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 21, 16, 0, 0, Math.PI * 2);
-            ctx.fill();
+            const shell = stunned ? '#6f859a' : '#b42318';
+            const body = stunned ? '#8ea1b3' : '#e24634';
+            const head = stunned ? '#7f94a9' : '#c73224';
 
-            ctx.fillStyle = stunned ? '#7f91a5' : '#bf2f0f';
-            ctx.beginPath();
-            ctx.ellipse(18, 0, 14, 10, 0.2, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#f4d03f';
-            ctx.beginPath();
-            ctx.arc(23, -4, 3, 0, Math.PI * 2);
-            ctx.arc(23, 4, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = stunned ? 'rgba(165, 195, 224, 0.85)' : 'rgba(255, 183, 77, 0.65)';
+            // Legs
+            ctx.strokeStyle = stunned ? '#607387' : '#7a1f16';
             ctx.lineWidth = 3;
+            for (let i = -2; i <= 2; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * 9, 8);
+                ctx.lineTo(i * 11, 18 + Math.abs(i));
+                ctx.stroke();
+            }
+
+            // Body
+            ctx.fillStyle = body;
             ctx.beginPath();
-            ctx.ellipse(0, 0, 28, 22, 0, 0, Math.PI * 2);
+            ctx.ellipse(-1, 0, 24, 16, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Shell plate
+            ctx.fillStyle = shell;
+            ctx.beginPath();
+            ctx.ellipse(-4, -3, 18, 11, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = head;
+            ctx.beginPath();
+            ctx.ellipse(20, 1, 14, 10, 0.12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Horns
+            ctx.strokeStyle = stunned ? '#a3afbf' : '#fde68a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(25, -6);
+            ctx.lineTo(30, -11);
+            ctx.moveTo(24, 6);
+            ctx.lineTo(30, 11);
+            ctx.stroke();
+
+            // Eyes
+            ctx.fillStyle = stunned ? '#c8d7e4' : '#fef08a';
+            ctx.beginPath();
+            ctx.arc(24, -3, 3, 0, Math.PI * 2);
+            ctx.arc(24, 3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#111827';
+            ctx.beginPath();
+            ctx.arc(24.8, -3, 1.1, 0, Math.PI * 2);
+            ctx.arc(24.8, 3, 1.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Crown
+            ctx.fillStyle = '#daa520';
+            ctx.beginPath();
+            ctx.arc(20, -12, 8.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#b8860b';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            // Crown points
+            ctx.fillStyle = '#ffd700';
+            const crownPoints = [14, 18, 22, 26, 30];
+            for (let cp = 0; cp < crownPoints.length; cp++) {
+                const px = crownPoints[cp];
+                ctx.beginPath();
+                ctx.moveTo(px - 2.5, -12);
+                ctx.lineTo(px, -20);
+                ctx.lineTo(px + 2.5, -12);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Crown inner edge
+            ctx.strokeStyle = '#daa520';
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.arc(20, -12, 6, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Aura ring
+            ctx.strokeStyle = stunned ? 'rgba(166, 205, 240, 0.75)' : 'rgba(251, 146, 60, 0.65)';
+            ctx.lineWidth = 2.7;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 29, 22, 0, 0, Math.PI * 2);
             ctx.stroke();
         } else {
-            ctx.fillStyle = stunned ? '#8aa0b6' : '#7b3fc9';
+            const shell = stunned ? '#70859e' : '#5f2fa8';
+            const body = stunned ? '#89a1b8' : '#7b3fc9';
+            const head = stunned ? '#94abc3' : '#8f4be0';
+
+            // Legs
+            ctx.strokeStyle = stunned ? '#607387' : '#41206f';
+            ctx.lineWidth = 2.1;
+            for (let i = -2; i <= 2; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * 7, 6);
+                ctx.lineTo(i * 8.5, 13 + Math.abs(i) * 0.6);
+                ctx.stroke();
+            }
+
+            // Body
+            ctx.fillStyle = body;
             ctx.beginPath();
-            ctx.ellipse(0, 0, 17, 12, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.fillStyle = stunned ? '#90a6bc' : '#8f4be0';
+            // Shell plate
+            ctx.fillStyle = shell;
+            ctx.beginPath();
+            ctx.ellipse(-3, -2, 13, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = head;
             ctx.beginPath();
             ctx.ellipse(13, 0, 10, 8, 0.2, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.fillStyle = '#93f06b';
+            // Eyes
+            ctx.fillStyle = stunned ? '#d5e4ef' : '#a3e635';
             ctx.beginPath();
-            ctx.arc(18, -3, 2, 0, Math.PI * 2);
-            ctx.arc(18, 3, 2, 0, Math.PI * 2);
+            ctx.arc(18, -3, 2.2, 0, Math.PI * 2);
+            ctx.arc(18, 3, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#111827';
+            ctx.beginPath();
+            ctx.arc(18.5, -3, 0.8, 0, Math.PI * 2);
+            ctx.arc(18.5, 3, 0.8, 0, Math.PI * 2);
             ctx.fill();
 
             if (stunned) {
@@ -184,16 +288,21 @@ class Enemy {
         // Health bar
         const barW = Math.max(36, this.width * 0.72);
         const pct = Math.max(0, this.hp / this.maxHp);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-        ctx.fillRect(center.x - barW / 2, center.y - this.height / 2 - 12, barW, 5);
-        ctx.fillStyle = pct > 0.35 ? '#67d183' : '#e16565';
-        ctx.fillRect(center.x - barW / 2, center.y - this.height / 2 - 12, barW * pct, 5);
+        const barX = center.x - barW / 2;
+        const barY = center.y - this.height / 2 - 13;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.5)';
+        ctx.fillRect(barX - 1, barY - 1, barW + 2, 7);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+        ctx.fillRect(barX, barY, barW, 5);
+        ctx.fillStyle = pct > 0.35 ? '#34d399' : '#f87171';
+        ctx.fillRect(barX, barY, barW * pct, 5);
 
         if (this.eatingResume && !stunned) {
             ctx.fillStyle = '#ffd166';
             ctx.font = `bold ${Math.max(12, Math.round(12 * visualScale))}px Arial`;
             ctx.textAlign = 'center';
-            ctx.fillText('EATING', center.x, center.y - this.height / 2 - 16);
+            ctx.fillText('EATING', center.x, center.y - this.height / 2 - 18);
         }
     }
 }
