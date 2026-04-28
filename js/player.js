@@ -1,4 +1,20 @@
-// Player class - Knight on horseback with sword and gun.
+/*
+ Player Module
+
+ This class represents the knight rider controlled by input targets.
+
+ Key behavior:
+ - Moves by chasing targetX/targetY with speed cap per frame
+ - Faces movement direction using angle
+ - Supports two visual attack animations:
+     - triggerHammer(frames): melee swing (used by normal hammer + rope pull slam timing)
+     - triggerGun(): brief recoil/muzzle flash animation for projectile skill support
+
+ Rendering notes:
+ - draw() builds the full sprite procedurally on canvas (horse, armor, shield, hammer)
+ - visualScale keeps sprite proportions tied to configured playerSize
+ - yOffset lets game.js drive vertical jump arcs during rope-pull phases
+*/
 class Player {
     constructor(x, y, options = {}) {
         const size = Number.isFinite(options.size) && options.size > 0 ? options.size : 64;

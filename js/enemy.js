@@ -1,4 +1,22 @@
-// Enemy class - Resume Eating Bugs that flee, can be stunned, and require hammer hits.
+/*
+ Enemy Module
+
+ Enemy implements both regular bugs and boss bugs.
+
+ Behavior model:
+ - If near player: flee
+ - Otherwise: navigate toward resume sheet and damage it when in contact
+ - Can be stunned by projectiles and damaged by hammer/shockwave systems
+
+ Scaling model:
+ - Size, speed, and hp are parameterized from gameplay settings
+ - Boss and regular variants share logic but render differently
+
+ Rendering model:
+ - Procedural bug art (body, legs, eyes, effects)
+ - Boss variant includes crown and aura visuals
+ - Health bar and eating indicator are drawn in world space
+*/
 class Enemy {
     constructor(x, y, options = {}) {
         this.x = x;

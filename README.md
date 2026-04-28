@@ -1,214 +1,184 @@
-# Dragon Hunter - 2D Game Portfolio Project
+# Protect My Resume - Canvas Game Portfolio
 
-An interactive **2D pixel art game** built with vanilla JavaScript and HTML5 Canvas for a professional portfolio/resume website.
+Interactive resume-defense game built with vanilla JavaScript and HTML5 Canvas.
 
-## 🎮 Game Overview
+Players protect an in-world resume from attacking bugs using hammer attacks, charged skills, and movement controls that support both desktop and smartphone play.
 
-**Dragon Hunter** is a progressive difficulty game where you control a knight on horseback to chase and catch dragons across 10 floors.
+## Project Goal
 
-### Game Features
-- ✅ **Progressive Floors**: Start with 2 dragons on Floor 1, increase to 10+ on later floors
-- 🐉 **Smart AI Enemies**: Dragons flee when you approach, wander when relaxed
-- 🏰 **Boss Battle**: Defeat the ultimate dragon boss on Floor 10
-- ℹ️ **Information Points**: Clickable elements scattered around the map
-- 🎨 **Pixel Art Graphics**: Retro-inspired hand-drawn assets using Canvas
-- ⌨️ **Keyboard Controls**: WASD or Arrow Keys to move
-- 🎯 **Visual Feedback**: Particle effects, progress indicators, floor tracking
-- 📱 **Responsive Design**: Works on desktop and tablets
+This repo combines:
+- A playable game loop and combat system
+- Resume content rendered directly in the world
+- Data-driven balancing from JSON
+- Mobile-first controls and accessibility improvements
 
-## 🗂️ Project Structure
+The codebase is intentionally framework-free to keep runtime behavior explicit and easy to customize.
 
-```
-myself/
-├── index.html              # Portfolio homepage with game showcase
-├── game.html               # Main game page
-├── CSS/
-│   └── styles.css          # Portfolio styling
-├── js/
-│   ├── game.js             # Main game logic & Game class
-│   ├── player.js           # Player (knight) class & movement
-│   ├── enemy.js            # Enemy (dragon) AI & behavior
-│   └── particle.js         # Particle effects system
-├── images/                 # Portfolio images
-└── README.md               # This file
-```
+## Current Gameplay Summary
 
-## 🚀 How to Run
+- Pre-game phase: explore/read the resume in the world (scroll and zoom)
+- Start phase: accept quest button to begin combat
+- Combat phase:
+  - Move player
+  - Tap/click attack for hammer slam
+  - Hold attack at full power to trigger special skill
+- Skill animation modes:
+  - `shockwave`
+  - `ropepull` (pull bugs in, jump/slam sequence, fire crack impact visuals)
+- Progression:
+  - Floors increase enemy challenge
+  - Resume health can be damaged by enemies reaching the resume
 
-### Option 1: Direct File Open
-1. Open `index.html` in your web browser
-2. Click "Play Dragon Hunter" button
-3. Use WASD or Arrow Keys to move
+## Controls
 
-### Option 2: Web Server (Recommended)
+### Desktop
+- Move/Aim: mouse position (player follows target)
+- Attack: click / hold then release
+- Admin panel: `Ctrl + Shift + Z`
+- Reset: `R`
+- Back: `B`
+
+### Smartphone
+- Left virtual joystick: analog movement (distance from center scales speed)
+- Right hammer button:
+  - tap for normal hammer
+  - hold for charged skill when power is full
+- Hidden admin unlock:
+  - move to bottom-left map corner
+  - slam hammer 5 times within 3 seconds
+
+## Configuration
+
+Main config file: `game_resume.json`
+
+Key sections:
+- `resumeLayout`: in-world resume dimensions
+- `resumeTypography`: font sizing/layout for resume rendering
+- `gameplaySettings`: baseline gameplay values
+- `gameplaySettingsForSmartPhone`: mobile-only overrides
+
+The game loads JSON at runtime and applies overrides to player, enemies, and skill defaults.
+
+## Architecture Overview
+
+### `js/game.js`
+Main orchestrator.
+
+Responsibilities:
+- state initialization and game loop
+- input routing (mouse/touch/mobile UI)
+- spawning/updating enemies
+- skill systems (shockwave, rope pull)
+- camera and pre-game navigation
+- drawing order for world + effects + HUD
+- admin panel lifecycle
+- loading and applying JSON config
+
+### `js/player.js`
+Player entity and procedural sprite renderer.
+
+Responsibilities:
+- target-chase movement
+- directional facing
+- hammer and gun animation timers
+- full player sprite draw logic (horse, armor, hammer)
+
+### `js/enemy.js`
+Enemy entity for regular and boss variants.
+
+Responsibilities:
+- flee/eat behavior rules
+- damage/stun/health handling
+- boss and regular procedural rendering
+- contact and spacing behavior support
+
+### `js/particle.js`
+Reusable particle effects for impact/catch/damage feedback.
+
+### `game.html`
+Game runtime page containing:
+- canvas
+- aim ring
+- smartphone controls overlay
+- script boot order for game dependencies
+
+### `index.html`
+Portfolio landing page linking into `game.html`.
+
+## Frame Lifecycle
+
+Per animation frame (`requestAnimationFrame`):
+1. `update()`
+   - resolve input state
+   - update player/enemies/projectiles/skills/effects
+   - apply game rules (damage, floor progression, transitions)
+2. `draw()`
+   - render terrain/resume
+   - render entities and effects
+   - render UI overlays
+
+This deterministic order is useful when adding new mechanics.
+
+## Notable Systems
+
+### Rope Pull Skill
+- Pulls enemies into ring around player
+- Player jump + timed hammer swing
+- Landing impact triggers:
+  - fire-style cracks
+  - shockwave ring
+  - burst particles
+- Fire crack lifetime is synchronized with rope-pull shockwave life
+
+### Mobile Input Model
+- Uses dedicated overlay controls in-game
+- Canvas touch handlers are gated to avoid conflicting mobile actions
+- Joystick movement is analog and capped by configured `playerSpeed`
+
+### Admin Panel
+- Runtime toggles for balancing/debugging
+- Spawn controls and floor jump
+- Skill animation selection
+- Explicit close button
+
+## Extending the Project
+
+Recommended workflow:
+1. Add config knobs in `game_resume.json`
+2. Apply knobs in `applyGameplaySettingsOverrides()`
+3. Keep update and draw concerns separated
+4. Validate mobile and desktop paths after changes
+
+Common safe extension points:
+- New skill animations: `fireSkill()` dispatch and dedicated update/draw helpers
+- New enemy variants: extend `Enemy` options and render branches
+- New VFX: add emitters in `ParticleSystem` and call from combat events
+- Additional mobile controls: extend `mobileControls` state and handlers
+
+## Running Locally
+
+Use a local server (recommended) because JSON config is fetched at runtime.
+
+Examples:
+
 ```bash
-# Using Python 3
 python -m http.server 8000
+```
 
-# Using Node.js (with http-server)
+or
+
+```bash
 npx http-server
-
-# Using Live Server in VS Code
-# Install "Live Server" extension, then right-click index.html → "Open with Live Server"
 ```
 
-Then navigate to `http://localhost:8000` and click the game link.
+Then open `http://localhost:8000` and navigate to `game.html` or `index.html`.
 
-## 🎮 Controls
+## Notes for Future AI Sessions
 
-| Key | Action |
-|-----|--------|
-| **W** / **↑** | Move Up |
-| **A** / **←** | Move Left |
-| **S** / **↓** | Move Down |
-| **D** / **→** | Move Right |
-| **Mouse Click** | Click info points to learn |
+If you open this repo in a new AI session, start by reading:
+1. `README.md`
+2. `game_resume.json`
+3. `js/game.js` top comment and constructor state fields
+4. `js/player.js`, `js/enemy.js`, `js/particle.js` top comments
 
-## 🎯 Gameplay Tips
-
-1. **Chase Pattern**: When dragons see you, they run away. Keep chasing!
-2. **Strategy**: Herd multiple dragons together to catch them more efficiently
-3. **Info Points**: Learn about your programming journey by clicking blue info circles
-4. **Progressive Difficulty**: Each floor adds more dragons to catch
-5. **Boss Monster**: Floor 10 has a glowing red dragon boss that's harder to catch
-
-## 💾 Game States
-
-### Floor Progression
-- **Floor 1**: 2 dragons
-- **Floor 2**: 3 dragons
-- **Floor 3**: 4 dragons
-- ...
-- **Floor 10**: Boss battle with enhanced dragon
-- **Victory**: Win screen after completing Floor 10
-
-### UI Elements
-- **Progress Bar**: Shows how many dragons you've caught
-- **Monster Indicators**: Visual checkmarks for caught dragons
-- **Floor Level**: Current floor display
-- **Info Panel**: Displays selected information or floor status
-
-## 🎨 Class Structure
-
-### Game Class
-- Manages game state, floors, enemy spawning
-- Handles collisions and catch detection
-- Controls game loop and rendering
-
-### Player Class
-- Represents the knight on horseback
-- Handles keyboard input and movement
-- Collision detection with enemies
-
-### Enemy Class
-- Represents dragons with AI behavior
-- Flees from player when too close
-- Wanders randomly when peaceful
-- Boss variant with enhanced stats
-
-### ParticleSystem & Particle Classes
-- Visual feedback for catching dragons
-- Explosion effects at catch locations
-- Self-managing particle lifecycle
-
-## 🔧 Customization
-
-### Change Dragon Colors
-Edit `js/enemy.js`:
-```javascript
-// Line ~80 for regular dragons
-ctx.fillStyle = '#8B008B'; // Change this color
-
-// Line ~17 for boss dragon
-ctx.fillStyle = '#FF4500'; // Change this color
-```
-
-### Adjust Difficulty
-Edit `js/game.js`:
-```javascript
-// Line ~30 - enemies per floor formula
-this.enemiesPerFloor = (floor) => 1 + floor; // Change formula here
-```
-
-### Modify Knight Appearance
-Edit `js/player.js` - The `draw()` method contains all knight rendering code
-
-### Add More Information Points
-Edit `js/game.js` - Modify the `infoData` array in `generateInfoPoints()` method
-
-## 📊 Technical Stack
-
-- **Language**: Vanilla JavaScript (ES6+)
-- **Graphics**: HTML5 Canvas API
-- **Animation**: RequestAnimationFrame
-- **Architecture**: Object-Oriented Programming (Classes)
-- **Compatibility**: All modern browsers (Chrome, Firefox, Safari, Edge)
-
-## 🎓 Learning Outcomes
-
-This project demonstrates:
-- ✅ Canvas API mastery (drawing, animations, transformations)
-- ✅ Game loop implementation
-- ✅ Collision detection algorithms
-- ✅ AI pathfinding and behavior
-- ✅ Event handling (keyboard, mouse)
-- ✅ Object-Oriented design patterns
-- ✅ Particle systems for visual effects
-- ✅ Responsive UI design
-
-## 📱 Browser Support
-
-| Browser | Support |
-|---------|---------|
-| Chrome/Edge | ✅ Full |
-| Firefox | ✅ Full |
-| Safari | ✅ Full |
-| Mobile Safari | ⚠️ Keyboard input limited |
-| Chrome Mobile | ⚠️ Keyboard input limited |
-
-## 🐛 Known Limitations
-
-- Mobile touch controls not implemented (keyboard only)
-- No sound/music (can be added with Web Audio API)
-- No save/load system
-- Single player only
-
-## 🚀 Future Enhancements
-
-Potential improvements:
-- [ ] Touch controls for mobile
-- [ ] Sound effects and background music
-- [ ] Leaderboard system
-- [ ] Power-ups and special items
-- [ ] Different environment themes
-- [ ] Multiplayer mode
-- [ ] Save progress to localStorage
-
-## 👨‍💻 About the Developer
-
-This game was created by **Quoc Ngoc Bui** as a portfolio project showcasing web development skills and game programming expertise.
-
-**Skills Demonstrated:**
-- Game Development (Canvas API)
-- JavaScript ES6+
-- Object-Oriented Programming
-- HTML5 & CSS3
-- Problem Solving & Algorithm Design
-- UI/UX Implementation
-
-**Portfolio**: [View Full Portfolio](./index.html)
-
-## 📄 License
-
-This project is part of a personal portfolio and is provided as-is for educational and demonstration purposes.
-
----
-
-**Last Updated**: 2026  
-**Version**: 1.0  
-**Status**: ✅ Fully Functional
-
----
-
-**GitHub Pages**: [https://github.com/quocbui2020/myself](https://quocbui2020.github.io/myself/)  
-**Settings > Pages** (left nav) -- This is where to publish your web app.
+Those files now contain architecture-oriented comments so a new session can map behavior quickly.

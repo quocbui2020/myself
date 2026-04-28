@@ -131,6 +131,16 @@
     </style>
 </head>
 <body>
+        <!--
+            Runtime entry page for the canvas game.
+
+            Structure:
+            - gameCanvas: full-screen render target for world + HUD
+            - aimRing: desktop/mouse aim helper (hidden on smartphone controls)
+            - mobileControls: virtual joystick + hammer button shown on mobile devices
+
+            JS boot order matters: player/enemy/particle are dependencies of game.js.
+        -->
     <canvas id="gameCanvas"></canvas>
 
     <div id="aimRing" class="aim-ring"></div>

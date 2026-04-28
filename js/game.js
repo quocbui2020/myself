@@ -1,4 +1,31 @@
-// Main game logic
+/*
+ Core Game Orchestrator
+
+ This file is the central runtime for the resume-defense canvas game.
+
+ High-level responsibilities:
+ - Load data/config from game_resume.json (resume content + gameplay settings)
+ - Maintain world state (player, enemies, particles, floors, camera, UI state)
+ - Route input from desktop mouse/touch and smartphone virtual controls
+ - Execute combat systems (hammer, rope pull, shockwave, projectiles)
+ - Render world, HUD, effects, and pre-game resume exploration screen
+
+ Runtime model:
+ 1) constructor() sets default state, creates systems, binds events
+ 2) gameLoop() calls update() then draw() every frame
+ 3) update() advances simulation and game rules
+ 4) draw() renders world and UI in deterministic layer order
+
+ Important config entry points:
+ - gameplaySettings: baseline gameplay tuning
+ - gameplaySettingsForSmartPhone: optional mobile-specific overrides
+ - resumeLayout / resumeTypography: in-world resume rendering controls
+
+ Mobile-specific notes:
+ - Virtual joystick controls analog movement using player.speed as max cap
+ - Hammer button supports tap-to-slam and hold-to-charge skill
+ - Hidden admin unlock: bottom-left zone + 5 hammer slams in 3 seconds
+*/
 class Game {
     constructor(canvas) {
         this.canvas = canvas;

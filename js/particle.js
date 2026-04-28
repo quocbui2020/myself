@@ -1,4 +1,13 @@
-// Particle system for visual effects
+/*
+ Particle Module
+
+ Lightweight particle effects used by game.js for combat and feedback cues.
+
+ Design notes:
+ - Particle: one visual point with velocity, gravity, and life decay
+ - ParticleSystem: pooled list with helper emitters (explosion/catch/damage)
+ - update() and draw() are called once per frame by Game
+*/
 class Particle {
     constructor(x, y, vx, vy, color, life) {
         this.x = x;
@@ -35,6 +44,7 @@ class Particle {
 
 class ParticleSystem {
     constructor() {
+        // Flat list is sufficient here and keeps update/draw cache-friendly.
         this.particles = [];
     }
 
