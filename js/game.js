@@ -1524,7 +1524,7 @@ class Game {
         this.powerPopups.push({
             x: cx,
             y: cy,
-            text: `+${powerGain}/${this.maxPower}`,
+            text: `↑${newPower}%`,
             life: 70,
             maxLife: 70
         });

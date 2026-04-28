@@ -21,7 +21,7 @@
   "resumeLayoutForSmartPhone": {
     "_comment": "Optional smartphone-only resume size override.",
     "width": 1280,
-    "height": 1710
+    "height": 1600
   },
   "gameplaySettings": {
     "_comment": "Gameplay knobs. Increase/decrease to tune difficulty and feel.",
