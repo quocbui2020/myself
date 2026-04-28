@@ -944,7 +944,10 @@ class Game {
         if (mag <= 0.03) return;
 
         const center = this.player.getCenter();
-        const reach = 180 * mag;
+        // True analog joystick movement:
+        // small deflection => tiny movement, full deflection => max playerSpeed.
+        const normalized = Math.max(0, Math.min(1, mag));
+        const reach = this.player.speed * normalized;
         const worldX = center.x + this.mobileControls.moveX * reach;
         const worldY = center.y + this.mobileControls.moveY * reach;
         this.player.setTarget(worldX, worldY);
