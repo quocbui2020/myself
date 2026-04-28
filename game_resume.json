@@ -34,7 +34,7 @@
     "bugSpeed": 5.0,
     "bugBossSpeed": 10.0,
     "bugHealth": 3,
-    "bugBossHealth": 6
+    "bugBossHealth": 8
   },
   "gameplaySettingsForSmartPhone": {
     "_comment": "Gameplay knobs. Increase/decrease to tune difficulty and feel.",
@@ -44,10 +44,10 @@
     "playerSpeed": 15,
     "bugSize": 50,
     "bugBossSize": 86,
-    "bugSpeed": 2.0,
-    "bugBossSpeed": 4.0,
-    "bugHealth": 2,
-    "bugBossHealth": 4
+    "bugSpeed": 2.5,
+    "bugBossSpeed": 6.0,
+    "bugHealth": 3,
+    "bugBossHealth": 8
   },
   "resumeTypography": {
     "_comment": "All font sizes in px for resume content only.",
