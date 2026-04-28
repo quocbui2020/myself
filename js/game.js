@@ -147,6 +147,9 @@ class Game {
         this.resumeHealth = 100;
         this.maxPower = 100;
         this.power = 0;
+        this.powerPopups = [];       // floating "+X/100" text shown on kill
+        this.floorTextTimer = 0;     // countdown (frames) for "Floor XX" display
+        this.floorTextLabel = '';    // e.g. "Floor 2"
         this.shockwaveChargeMs = 3000;
         this.shockwaveDelayMs = 500;
         this.isChargingShockwave = false;
@@ -1364,6 +1367,12 @@ class Game {
         this.defeatedThisFloor = 0;
         // NOTE: resumeHealth does NOT reset on floor transition - only on game restart
 
+        // Show "Floor XX" banner (skip floor 1 — that's the initial spawn)
+        if (this.currentFloor > 1) {
+            this.floorTextLabel = `Floor ${this.currentFloor}`;
+            this.floorTextTimer = 180; // ~3 seconds at 60 fps
+        }
+
         const count = this.getEnemyCountForFloor(this.currentFloor);
         const tier = this.getUpgradeTier(this.currentFloor);
         const bossSlotIndexes = this.getBossSlotIndexes(count, this.currentFloor);
@@ -1507,6 +1516,18 @@ class Game {
         this.totalDefeated++;
         const powerGain = enemy && enemy.isBoss ? 10 : 5;
         this.power = Math.min(this.maxPower, this.power + powerGain);
+
+        // Spawn floating power popup at enemy center
+        const cx = enemy ? (enemy.x + (enemy.width || 0) / 2) : 0;
+        const cy = enemy ? (enemy.y + (enemy.height || 0) / 2) : 0;
+        const newPower = Math.round(this.power);
+        this.powerPopups.push({
+            x: cx,
+            y: cy,
+            text: `+${powerGain}/${this.maxPower}`,
+            life: 70,
+            maxLife: 70
+        });
     }
 
     onInputRelease(event) {
@@ -2644,6 +2665,47 @@ class Game {
         this.drawRopePull();
         if (this.gameStarted) {
             this.player.draw(this.ctx, this.getRopePullPlayerYOffset());
+
+            // Aura ring when power is full (disappears after skill fires, i.e. power drops)
+            if (this.power >= this.maxPower) {
+                const pc = this.player.getCenter();
+                const baseR = (this.gameplaySettings.playerSize / 2) * 1.55;
+                const pulse = Math.sin(now * 0.006) * 0.12 + 0.88; // gentle 0.76–1.0 scale
+                this.ctx.save();
+                for (let ring = 0; ring < 3; ring++) {
+                    const r = (baseR + ring * 10) * pulse;
+                    const alpha = 0.55 - ring * 0.15;
+                    this.ctx.beginPath();
+                    this.ctx.arc(pc.x, pc.y - this.getRopePullPlayerYOffset(), r, 0, Math.PI * 2);
+                    this.ctx.strokeStyle = `rgba(255, 210, 50, ${alpha})`;
+                    this.ctx.lineWidth = 3 - ring * 0.8;
+                    this.ctx.shadowColor = 'rgba(255, 180, 0, 0.7)';
+                    this.ctx.shadowBlur = 12;
+                    this.ctx.stroke();
+                }
+                this.ctx.restore();
+            }
+
+            // Floating power gain popups (world space, drift upward)
+            this.ctx.save();
+            for (let i = this.powerPopups.length - 1; i >= 0; i--) {
+                const p = this.powerPopups[i];
+                const t = p.life / p.maxLife;           // 1 → 0 as it fades
+                const alpha = t < 0.3 ? t / 0.3 : 1;   // fade out in last 30% of life
+                const dy = (1 - t) * 55;                // drift 55px upward
+                this.ctx.globalAlpha = alpha;
+                this.ctx.font = 'bold 22px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = '#FFD700';
+                this.ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeText(p.text, p.x, p.y - dy);
+                this.ctx.fillText(p.text, p.x, p.y - dy);
+                p.life--;
+                if (p.life <= 0) this.powerPopups.splice(i, 1);
+            }
+            this.ctx.globalAlpha = 1;
+            this.ctx.restore();
         }
         this.particles.draw(this.ctx);
         this.drawCracks();
@@ -2668,6 +2730,25 @@ class Game {
         this.drawOffscreenBugArrows();
 
         this.ctx.restore();
+
+        // Floor transition banner (screen space, top-center, fades away)
+        if (this.gameStarted && this.floorTextTimer > 0) {
+            const t = this.floorTextTimer / 180;          // 1.0 → 0 as it fades
+            const alpha = t < 0.35 ? t / 0.35 : 1;       // fade out in last 35%
+            const yPos = this.height * 0.12;
+            this.ctx.save();
+            this.ctx.globalAlpha = alpha;
+            this.ctx.font = 'bold 42px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+            this.ctx.lineWidth = 5;
+            this.ctx.strokeText(this.floorTextLabel, this.width / 2, yPos);
+            this.ctx.fillText(this.floorTextLabel, this.width / 2, yPos);
+            this.ctx.globalAlpha = 1;
+            this.ctx.restore();
+            this.floorTextTimer--;
+        }
 
         if (!this.gameStarted) {
             this.drawPreStartScrollbars();
