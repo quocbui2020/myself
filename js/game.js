@@ -275,6 +275,11 @@ class Game {
         this.canvas.addEventListener('touchstart', (event) => {
             event.preventDefault();
 
+            // In-game smartphone controls are handled by joystick/hammer UI, not canvas touch.
+            if (this.mobileControlsEnabled && this.gameStarted) {
+                return;
+            }
+
             if (event.touches.length > 0) {
                 const touch = event.touches[0];
                 const rect = this.canvas.getBoundingClientRect();
@@ -320,6 +325,11 @@ class Game {
 
         this.canvas.addEventListener('touchmove', (event) => {
             event.preventDefault();
+
+            // In-game smartphone controls are handled by joystick/hammer UI, not canvas touch.
+            if (this.mobileControlsEnabled && this.gameStarted) {
+                return;
+            }
 
             if (event.touches.length > 0) {
                 const rect = this.canvas.getBoundingClientRect();
@@ -386,7 +396,11 @@ class Game {
                         const zoomRatio = currentDistance / this.touchState.lastDistance;
                         
                         if (!this.gameStarted) {
-                            this.preStartZoom = Math.max(0.7, Math.min(this.preStartZoom * zoomRatio, 2.2));
+                            const zoomBounds = this.getPreStartZoomBounds();
+                            this.preStartZoom = Math.max(
+                                zoomBounds.min,
+                                Math.min(this.preStartZoom * zoomRatio, zoomBounds.max)
+                            );
                             const maxCameraX = Math.max(0, this.worldWidth - this.width / this.preStartZoom);
                             const maxCameraY = Math.max(0, this.worldHeight - this.height / this.preStartZoom);
                             this.preStartWheelOffsetX = Math.max(0, Math.min(this.preStartWheelOffsetX, maxCameraX));
@@ -403,6 +417,15 @@ class Game {
 
         this.canvas.addEventListener('touchend', (event) => {
             event.preventDefault();
+
+            // In-game smartphone controls are handled by joystick/hammer UI, not canvas touch.
+            if (this.mobileControlsEnabled && this.gameStarted) {
+                this.touchState.touchCount = event.touches.length;
+                this.touchState.lastDistance = 0;
+                this.touchState.isActive = event.touches.length > 0;
+                return;
+            }
+
             if (event.touches.length === 0 && this.gameStarted) {
                 this.onInputRelease(null);
             } else if (event.touches.length > 0) {
@@ -428,6 +451,12 @@ class Game {
         }, { passive: false });
 
         this.canvas.addEventListener('touchcancel', () => {
+            if (this.mobileControlsEnabled && this.gameStarted) {
+                this.touchState.isActive = false;
+                this.touchState.touchCount = 0;
+                this.touchState.lastDistance = 0;
+                return;
+            }
             this.touchState.isActive = false;
             this.touchState.touchCount = 0;
             this.touchState.lastDistance = 0;
@@ -669,7 +698,18 @@ class Game {
     }
 
     applyGameplaySettingsOverrides() {
-        const source = this.resumeData && this.resumeData.gameplaySettings ? this.resumeData.gameplaySettings : null;
+        const baseSettings = this.resumeData && this.resumeData.gameplaySettings ? this.resumeData.gameplaySettings : null;
+        const mobileSettings = this.resumeData && this.resumeData.gameplaySettingsForSmartPhone
+            ? this.resumeData.gameplaySettingsForSmartPhone
+            : null;
+
+        let source = null;
+        if (baseSettings && typeof baseSettings === 'object') {
+            source = baseSettings;
+        }
+        if (this.mobileControlsEnabled && mobileSettings && typeof mobileSettings === 'object') {
+            source = Object.assign({}, source || {}, mobileSettings);
+        }
         if (!source || typeof source !== 'object') return;
 
         const keys = [
@@ -733,6 +773,13 @@ class Game {
             x: event.clientX - rect.left,
             y: event.clientY - rect.top
         };
+    }
+
+    getPreStartZoomBounds() {
+        if (this.mobileControlsEnabled) {
+            return { min: 0.35, max: 2.6 };
+        }
+        return { min: 0.7, max: 2.2 };
     }
 
     detectMobileControls() {

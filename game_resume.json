@@ -9,7 +9,8 @@
     "workExperience": "Array of jobs. Each job has title, company, dateRange, and highlights[].",
     "education": "Array of education records. Each record has degree, institution, dateRange, and highlights[].",
     "resumeTypography": "Font settings for resume text. Increase/decrease these values to tune readability.",
-    "gameplaySettings": "Gameplay tuning settings for player and bugs (size, speed, health)."
+    "gameplaySettings": "Gameplay tuning settings for player and bugs (size, speed, health).",
+    "gameplaySettingsForSmartPhone": "Optional smartphone-only gameplay overrides. Applied only on coarse/no-hover devices."
   },
   "resumeLayout": {
     "_comment": "Main size controls. Edit these two values first when you want bigger/smaller resume.",
@@ -17,6 +18,19 @@
     "height": 1550
   },
   "gameplaySettings": {
+    "_comment": "Gameplay knobs. Increase/decrease to tune difficulty and feel.",
+    "_skillAnimationComment": "defaultSkillAnimation: 'shockwave' = expanding ring blast | 'ropepull' = ropes pull bugs to player then slam",
+    "defaultSkillAnimation": "ropepull",
+    "playerSize": 90,
+    "playerSpeed": 30,
+    "bugSize": 80,
+    "bugBossSize": 120,
+    "bugSpeed": 5.0,
+    "bugBossSpeed": 10.0,
+    "bugHealth": 3,
+    "bugBossHealth": 6
+  },
+  "gameplaySettingsForSmartPhone": {
     "_comment": "Gameplay knobs. Increase/decrease to tune difficulty and feel.",
     "_skillAnimationComment": "defaultSkillAnimation: 'shockwave' = expanding ring blast | 'ropepull' = ropes pull bugs to player then slam",
     "defaultSkillAnimation": "ropepull",
