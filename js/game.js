@@ -79,6 +79,11 @@ class Game {
         this.preStartWheelOffsetX = 0;
         this.preStartWheelOffsetY = 0;
         this.preStartZoom = 1;
+        this.preStartScrollbarDrag = {
+            axis: null,
+            startPointer: 0,
+            startOffset: 0
+        };
 
         this.currentFloor = 1;
         this.currentEnemies = [];
@@ -171,6 +176,12 @@ class Game {
 
         this.canvas.addEventListener('mousemove', (event) => {
             const pos = this.getMousePosition(event);
+
+            if (this.updatePreStartScrollbarDrag(pos)) {
+                this.updateAimRing();
+                return;
+            }
+
             this.mouseX = pos.x;
             this.mouseY = pos.y;
             const worldPos = this.screenToWorld(pos.x, pos.y);
@@ -181,6 +192,11 @@ class Game {
         this.canvas.addEventListener('mousedown', (event) => {
             if (event.button === 0) {
                 const pos = this.getMousePosition(event);
+
+                if (!this.gameStarted && this.beginPreStartScrollbarDrag(pos)) {
+                    return;
+                }
+
                 const worldPos = this.screenToWorld(pos.x, pos.y);
 
                 const acceptRect = this.acceptButtonRect || this.getAcceptButtonRect();
@@ -198,6 +214,11 @@ class Game {
 
         window.addEventListener('mouseup', (event) => {
             if (event.button !== 0) return;
+
+            if (this.endPreStartScrollbarDrag()) {
+                return;
+            }
+
             if (this.gameStarted) {
                 this.onInputRelease(event);
             } else {
@@ -210,7 +231,17 @@ class Game {
             if (event.ctrlKey) return;
             if (this.gameStarted) return;
             event.preventDefault();
-            this.preStartWheelOffsetY += event.deltaY;
+
+            // Support trackpad horizontal scroll and Shift+wheel horizontal fallback.
+            const panX = event.shiftKey ? event.deltaY : event.deltaX;
+            const panY = event.deltaY;
+            this.preStartWheelOffsetX += panX;
+            this.preStartWheelOffsetY += panY;
+
+            const maxCameraX = Math.max(0, this.worldWidth - this.width / this.preStartZoom);
+            const maxCameraY = Math.max(0, this.worldHeight - this.height / this.preStartZoom);
+            this.preStartWheelOffsetX = Math.max(0, Math.min(this.preStartWheelOffsetX, maxCameraX));
+            this.preStartWheelOffsetY = Math.max(0, Math.min(this.preStartWheelOffsetY, maxCameraY));
         }, { passive: false });
 
         // Touch events for mobile controls
@@ -771,6 +802,158 @@ class Game {
 
         this.renderOffsetX = this.width > this.worldWidth ? (this.width - this.worldWidth) * 0.5 : 0;
         this.renderOffsetY = this.height > this.worldHeight ? (this.height - this.worldHeight) * 0.5 : 0;
+    }
+
+    getPreStartScrollbarModel() {
+        if (this.gameStarted) return null;
+
+        const scale = this.preStartZoom;
+        const viewportWorldWidth = this.width / scale;
+        const viewportWorldHeight = this.height / scale;
+        const maxCameraX = Math.max(0, this.worldWidth - viewportWorldWidth);
+        const maxCameraY = Math.max(0, this.worldHeight - viewportWorldHeight);
+
+        const showH = maxCameraX > 0.5;
+        const showV = maxCameraY > 0.5;
+        if (!showH && !showV) return null;
+
+        const padding = 12;
+        const thickness = 12;
+        const gap = 4;
+        const rightInset = showV ? thickness + gap : 0;
+        const bottomInset = showH ? thickness + gap : 0;
+
+        let h = null;
+        if (showH) {
+            const trackX = padding;
+            const trackY = this.height - padding - thickness;
+            const trackW = Math.max(40, this.width - padding * 2 - rightInset);
+            const thumbW = Math.max(36, trackW * (viewportWorldWidth / this.worldWidth));
+            const travel = Math.max(1, trackW - thumbW);
+            const ratio = maxCameraX <= 0 ? 0 : (this.preStartWheelOffsetX / maxCameraX);
+            const thumbX = trackX + travel * Math.max(0, Math.min(1, ratio));
+            h = {
+                axis: 'x',
+                max: maxCameraX,
+                track: { x: trackX, y: trackY, width: trackW, height: thickness },
+                thumb: { x: thumbX, y: trackY + 1, width: thumbW, height: thickness - 2 },
+                travel
+            };
+        }
+
+        let v = null;
+        if (showV) {
+            const trackX = this.width - padding - thickness;
+            const trackY = padding;
+            const trackH = Math.max(40, this.height - padding * 2 - bottomInset);
+            const thumbH = Math.max(36, trackH * (viewportWorldHeight / this.worldHeight));
+            const travel = Math.max(1, trackH - thumbH);
+            const ratio = maxCameraY <= 0 ? 0 : (this.preStartWheelOffsetY / maxCameraY);
+            const thumbY = trackY + travel * Math.max(0, Math.min(1, ratio));
+            v = {
+                axis: 'y',
+                max: maxCameraY,
+                track: { x: trackX, y: trackY, width: thickness, height: trackH },
+                thumb: { x: trackX + 1, y: thumbY, width: thickness - 2, height: thumbH },
+                travel
+            };
+        }
+
+        return { h, v };
+    }
+
+    isPointInScreenRect(point, rect) {
+        return (
+            point.x >= rect.x &&
+            point.x <= rect.x + rect.width &&
+            point.y >= rect.y &&
+            point.y <= rect.y + rect.height
+        );
+    }
+
+    beginPreStartScrollbarDrag(pos) {
+        const model = this.getPreStartScrollbarModel();
+        if (!model) return false;
+
+        if (model.h && this.isPointInScreenRect(pos, model.h.track)) {
+            this.preStartScrollbarDrag.axis = 'x';
+            this.preStartScrollbarDrag.startPointer = pos.x;
+            this.preStartScrollbarDrag.startOffset = this.preStartWheelOffsetX;
+            this.canvas.style.cursor = 'grabbing';
+            return true;
+        }
+
+        if (model.v && this.isPointInScreenRect(pos, model.v.track)) {
+            this.preStartScrollbarDrag.axis = 'y';
+            this.preStartScrollbarDrag.startPointer = pos.y;
+            this.preStartScrollbarDrag.startOffset = this.preStartWheelOffsetY;
+            this.canvas.style.cursor = 'grabbing';
+            return true;
+        }
+
+        return false;
+    }
+
+    updatePreStartScrollbarDrag(pos) {
+        if (this.gameStarted) return false;
+        const axis = this.preStartScrollbarDrag.axis;
+        if (!axis) return false;
+
+        const model = this.getPreStartScrollbarModel();
+        if (!model) return false;
+
+        if (axis === 'x' && model.h) {
+            const delta = pos.x - this.preStartScrollbarDrag.startPointer;
+            const ratio = delta / model.h.travel;
+            this.preStartWheelOffsetX = this.preStartScrollbarDrag.startOffset + ratio * model.h.max;
+        } else if (axis === 'y' && model.v) {
+            const delta = pos.y - this.preStartScrollbarDrag.startPointer;
+            const ratio = delta / model.v.travel;
+            this.preStartWheelOffsetY = this.preStartScrollbarDrag.startOffset + ratio * model.v.max;
+        }
+
+        this.updateCamera();
+        return true;
+    }
+
+    endPreStartScrollbarDrag() {
+        if (!this.preStartScrollbarDrag.axis) return false;
+        this.preStartScrollbarDrag.axis = null;
+        if (!this.gameStarted) {
+            this.canvas.style.cursor = 'default';
+        }
+        return true;
+    }
+
+    drawPreStartScrollbars() {
+        const model = this.getPreStartScrollbarModel();
+        if (!model) return;
+
+        this.ctx.save();
+        this.ctx.fillStyle = 'rgba(30, 41, 59, 0.18)';
+        this.ctx.strokeStyle = 'rgba(15, 23, 42, 0.35)';
+        this.ctx.lineWidth = 1;
+
+        if (model.h) {
+            const t = model.h.track;
+            this.ctx.fillRect(t.x, t.y, t.width, t.height);
+            this.ctx.strokeRect(t.x, t.y, t.width, t.height);
+            const thumb = model.h.thumb;
+            this.ctx.fillStyle = 'rgba(30, 41, 59, 0.55)';
+            this.ctx.fillRect(thumb.x, thumb.y, thumb.width, thumb.height);
+            this.ctx.fillStyle = 'rgba(30, 41, 59, 0.18)';
+        }
+
+        if (model.v) {
+            const t = model.v.track;
+            this.ctx.fillRect(t.x, t.y, t.width, t.height);
+            this.ctx.strokeRect(t.x, t.y, t.width, t.height);
+            const thumb = model.v.thumb;
+            this.ctx.fillStyle = 'rgba(30, 41, 59, 0.55)';
+            this.ctx.fillRect(thumb.x, thumb.y, thumb.width, thumb.height);
+        }
+
+        this.ctx.restore();
     }
 
     centerCameraOnPlayer() {
@@ -2050,6 +2233,10 @@ class Game {
         this.drawOffscreenBugArrows();
 
         this.ctx.restore();
+
+        if (!this.gameStarted) {
+            this.drawPreStartScrollbars();
+        }
     }
 
     gameLoop = () => {
