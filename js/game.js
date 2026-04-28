@@ -106,6 +106,7 @@ class Game {
         this.preStartWheelOffsetX = 0;
         this.preStartWheelOffsetY = 0;
         this.preStartZoom = 1;
+        this.inGameZoom = this.mobileControlsEnabled ? 0.88 : 1;
         this.preStartScrollbarDrag = {
             axis: null,
             startPointer: 0,
@@ -861,6 +862,10 @@ class Game {
         return { min: 0.7, max: 2.2 };
     }
 
+    getWorldRenderScale() {
+        return this.gameStarted ? this.inGameZoom : this.preStartZoom;
+    }
+
     detectMobileControls() {
         const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
         const noHover = window.matchMedia && window.matchMedia('(hover: none)').matches;
@@ -1084,7 +1089,7 @@ class Game {
     }
 
     screenToWorld(screenX, screenY) {
-        const scale = this.gameStarted ? 1 : this.preStartZoom;
+        const scale = this.getWorldRenderScale();
         return {
             x: (screenX - this.renderOffsetX) / scale + this.cameraX,
             y: (screenY - this.renderOffsetY) / scale + this.cameraY
@@ -1098,7 +1103,7 @@ class Game {
             return;
         }
 
-        const scale = this.gameStarted ? 1 : this.preStartZoom;
+        const scale = this.getWorldRenderScale();
         const viewportWorldWidth = this.width / scale;
         const viewportWorldHeight = this.height / scale;
         const maxCameraX = Math.max(0, this.worldWidth - viewportWorldWidth);
@@ -2579,7 +2584,7 @@ class Game {
     }
 
     worldToScreen(worldX, worldY) {
-        const scale = this.gameStarted ? 1 : this.preStartZoom;
+        const scale = this.getWorldRenderScale();
         return {
             x: (worldX - this.cameraX) * scale + this.renderOffsetX,
             y: (worldY - this.cameraY) * scale + this.renderOffsetY
@@ -2649,7 +2654,7 @@ class Game {
         this.ctx.translate(shake.x, shake.y);
 
         this.ctx.save();
-        const scale = this.gameStarted ? 1 : this.preStartZoom;
+        const scale = this.getWorldRenderScale();
         this.ctx.translate(this.renderOffsetX, this.renderOffsetY);
         this.ctx.scale(scale, scale);
         this.ctx.translate(-this.cameraX, -this.cameraY);
