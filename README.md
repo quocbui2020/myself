@@ -4,6 +4,10 @@ Interactive resume-defense game built with vanilla JavaScript and HTML5 Canvas.
 
 Players protect an in-world resume from attacking bugs using hammer attacks, charged skills, and movement controls that support both desktop and smartphone play.
 
+## Live Webpage
+
+- https://quocbui2020.github.io/myself/
+
 ## Project Goal
 
 This repo combines:
