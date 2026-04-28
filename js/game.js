@@ -873,6 +873,12 @@ class Game {
         }
 
         if (hammerBtn) {
+            hammerBtn.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+            });
+            hammerBtn.addEventListener('selectstart', (event) => {
+                event.preventDefault();
+            });
             hammerBtn.addEventListener('pointerdown', (event) => {
                 event.preventDefault();
                 if (!this.gameStarted) return;
