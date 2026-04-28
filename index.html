@@ -143,9 +143,65 @@
         }
 
         .nav-btn.tertiary {
-            background: #eef5fc;
-            color: #1f6fb2;
-            border: 1px solid #bfd5ea;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #ff8f1f 0%, #ffb100 52%, #ffd24d 100%);
+            color: #1f2b3d;
+            border: 1px solid #f0a025;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            box-shadow: 0 10px 22px rgba(255, 145, 0, 0.38);
+            animation: demoBtnPulse 2.2s ease-in-out infinite;
+        }
+
+        .nav-btn.tertiary::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -40%;
+            width: 34%;
+            height: 140%;
+            transform: rotate(22deg);
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0),
+                rgba(255, 255, 255, 0.62),
+                rgba(255, 255, 255, 0)
+            );
+            pointer-events: none;
+            animation: demoBtnShine 2.8s linear infinite;
+        }
+
+        .nav-btn.tertiary:hover {
+            background: linear-gradient(135deg, #ff8400 0%, #ffab00 52%, #ffc83a 100%);
+            color: #172131;
+            border-color: #e48f00;
+            box-shadow: 0 14px 30px rgba(255, 145, 0, 0.5);
+            transform: translateY(-3px) scale(1.04);
+        }
+
+        .nav-btn.tertiary:active {
+            transform: translateY(-1px) scale(1.01);
+            box-shadow: 0 8px 16px rgba(255, 145, 0, 0.35);
+        }
+
+        @keyframes demoBtnPulse {
+            0%,
+            100% {
+                box-shadow: 0 10px 22px rgba(255, 145, 0, 0.34);
+            }
+            50% {
+                box-shadow: 0 0 0 5px rgba(255, 193, 70, 0.22), 0 15px 30px rgba(255, 145, 0, 0.52);
+            }
+        }
+
+        @keyframes demoBtnShine {
+            0% {
+                left: -45%;
+            }
+            100% {
+                left: 125%;
+            }
         }
 
         /* Main Content */
@@ -513,7 +569,7 @@
             <div class="header-nav">
                 <a id="emailCta" href="#contact" class="nav-btn">Contact Me</a>
                 <button class="nav-btn secondary" onclick="downloadResumePdf()">Download Resume (PDF)</button>
-                <a href="game.html" class="nav-btn tertiary">Interactive Resume Demo</a>
+                <a href="game.html" class="nav-btn tertiary">Play Interactive Resume Demo</a>
             </div>
         </header>
 
