@@ -34,14 +34,14 @@
     "_comment": "Gameplay knobs. Increase/decrease to tune difficulty and feel.",
     "_skillAnimationComment": "defaultSkillAnimation: 'shockwave' = expanding ring blast | 'ropepull' = ropes pull bugs to player then slam",
     "defaultSkillAnimation": "ropepull",
-    "playerSize": 90,
-    "playerSpeed": 30,
-    "bugSize": 80,
-    "bugBossSize": 120,
-    "bugSpeed": 5.0,
-    "bugBossSpeed": 10.0,
-    "bugHealth": 3,
-    "bugBossHealth": 6
+    "playerSize": 54,
+    "playerSpeed": 15,
+    "bugSize": 50,
+    "bugBossSize": 86,
+    "bugSpeed": 2.0,
+    "bugBossSpeed": 4.0,
+    "bugHealth": 2,
+    "bugBossHealth": 4
   },
   "resumeTypography": {
     "_comment": "All font sizes in px for resume content only.",

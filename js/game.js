@@ -132,6 +132,10 @@ class Game {
         this.adminOneHitKill = false;
         this.adminInfinitePower = false;
         this.adminPanelEl = null;
+        this.mobileAdminUnlockHits = [];
+        this.mobileAdminUnlockRequiredHits = 5;
+        this.mobileAdminUnlockWindowMs = 3000;
+        this.mobileAdminUnlockCornerPadding = 130;
         this.resumeRect = { x: 0, y: 0, width: 0, height: 0 };
         this.gameStarted = false;
         this.acceptButtonRect = null;
@@ -497,7 +501,10 @@ class Game {
         panel.style.color = '#111827';
 
         panel.innerHTML = [
-            '<div style="font-weight:700; font-size:14px; margin-bottom:8px;">Admin Panel</div>',
+            '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">',
+            '<div style="font-weight:700; font-size:14px;">Admin Panel</div>',
+            '<button id="adminCloseBtn" style="font-size:11px; padding:2px 7px; border-radius:4px; border:none; background:#4b5563; color:#fff; cursor:pointer;">Close</button>',
+            '</div>',
             '<label style="display:flex; align-items:center; gap:8px; margin:8px 0; font-size:13px;">',
             '<input id="adminOneHitKillToggle" type="checkbox" />',
             'One Hit Kill',
@@ -540,6 +547,7 @@ class Game {
         const floorJumpBtn = panel.querySelector('#adminFloorJump');
         const spawnBugBtn = panel.querySelector('#adminSpawnBug');
         const spawnBossBtn = panel.querySelector('#adminSpawnBoss');
+        const closeBtn = panel.querySelector('#adminCloseBtn');
 
         if (oneHitToggle) {
             oneHitToggle.checked = this.adminOneHitKill;
@@ -605,18 +613,55 @@ class Game {
         };
         if (spawnBugBtn) spawnBugBtn.addEventListener('click', () => spawnOne(false));
         if (spawnBossBtn) spawnBossBtn.addEventListener('click', () => spawnOne(true));
+        if (closeBtn) closeBtn.addEventListener('click', () => this.closeAdminPanel());
+    }
+
+    openAdminPanel() {
+        this.adminPanelOpen = true;
+        if (this.adminPanelEl) {
+            this.adminPanelEl.style.display = 'block';
+            const sel = this.adminPanelEl.querySelector('#adminSkillAnimSelect');
+            if (sel) sel.value = this.skillAnimation;
+            const floorInput = this.adminPanelEl.querySelector('#adminFloorInput');
+            if (floorInput) floorInput.value = String(this.currentFloor);
+        }
+    }
+
+    closeAdminPanel() {
+        this.adminPanelOpen = false;
+        if (this.adminPanelEl) {
+            this.adminPanelEl.style.display = 'none';
+        }
     }
 
     toggleAdminPanel() {
-        this.adminPanelOpen = !this.adminPanelOpen;
-        if (this.adminPanelEl) {
-            this.adminPanelEl.style.display = this.adminPanelOpen ? 'block' : 'none';
-            if (this.adminPanelOpen) {
-                const sel = this.adminPanelEl.querySelector('#adminSkillAnimSelect');
-                if (sel) sel.value = this.skillAnimation;
-                const floorInput = this.adminPanelEl.querySelector('#adminFloorInput');
-                if (floorInput) floorInput.value = String(this.currentFloor);
-            }
+        if (this.adminPanelOpen) {
+            this.closeAdminPanel();
+        } else {
+            this.openAdminPanel();
+        }
+    }
+
+    isInMobileAdminUnlockZone() {
+        if (!this.mobileControlsEnabled || !this.gameStarted || !this.player) return false;
+        const center = this.player.getCenter();
+        const pad = this.mobileAdminUnlockCornerPadding;
+        return center.x <= pad && center.y >= this.worldHeight - pad;
+    }
+
+    registerMobileAdminUnlockHit() {
+        if (!this.isInMobileAdminUnlockZone()) {
+            this.mobileAdminUnlockHits = [];
+            return;
+        }
+
+        const now = performance.now();
+        this.mobileAdminUnlockHits = this.mobileAdminUnlockHits.filter((t) => now - t <= this.mobileAdminUnlockWindowMs);
+        this.mobileAdminUnlockHits.push(now);
+
+        if (this.mobileAdminUnlockHits.length >= this.mobileAdminUnlockRequiredHits) {
+            this.mobileAdminUnlockHits = [];
+            this.openAdminPanel();
         }
     }
 
@@ -930,7 +975,7 @@ class Game {
             this.fireSkill();
         } else {
             const worldPos = this.getMobileAttackTarget();
-            this.swingHammerAt(worldPos.x, worldPos.y);
+            this.swingHammerAt(worldPos.x, worldPos.y, false);
         }
     }
 
@@ -1372,6 +1417,8 @@ class Game {
                 }
             }
         }
+
+        this.registerMobileAdminUnlockHit();
     }
 
     swingHammerAt(worldX, worldY, updateTarget = true) {
@@ -1411,6 +1458,8 @@ class Game {
                 }
             }
         }
+
+        this.registerMobileAdminUnlockHit();
     }
 
     registerEnemyDefeat(enemy) {
